@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Code Red FRC 2026 Scout"
+version = "1.0.0"
+id = "artifacts/frc-scout"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19318
+
+[services.development]
+run = "pnpm --filter @workspace/frc-scout run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/frc-scout", "run", "build" ]
+publicDir = "artifacts/frc-scout/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19318"
+BASE_PATH = "/"

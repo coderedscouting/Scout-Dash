@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "For page transitions, wizard animations, and dynamic UI elements"
+  "clsx": "Utility for merging tailwind classes conditionally"
+  "tailwind-merge": "Utility for resolving tailwind class conflicts"
+  "date-fns": "For formatting timestamps in the data viewer tables"
+  "@radix-ui/react-slot": "For accessible UI component composition"
+  "@radix-ui/react-tabs": "For the data viewer tabs"
+
+images:
+  - path: "artifacts/frc-scout/public/images/logo.png"
+    description: "A fierce, bold, modern esports-style logo featuring the text 'CODE RED' and '2771' in red, black, and white colors with sharp, aggressive, sporty angles, transparent background if possible."
+    aspect_ratio: "1:1"
+  - path: "artifacts/frc-scout/public/images/hero-bg.png"
+    description: "Abstract, dark, smoky industrial background with glowing red neon lighting, metallic textures, and a subtle high-tech futuristic vibe."
+    aspect_ratio: "16:9"
+
+notes:
+  - Using standard fetch with TanStack Query to ensure standalone stability.
+  - Assuming /api/match-entries and /api/hp-entries are available relative to the origin.
+  - The match wizard logic counts up from 0, auto transitions at 19s to Teleop.

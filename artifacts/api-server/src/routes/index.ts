@@ -1,8 +1,12 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import matchEntriesRouter from "./matchEntries";
+import hpEntriesRouter from "./hpEntries";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(matchEntriesRouter);
+router.use(hpEntriesRouter);
 
 export default router;

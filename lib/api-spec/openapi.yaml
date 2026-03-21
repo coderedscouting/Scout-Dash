@@ -1,22 +1,24 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Code Red FRC 2026 Scout API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: match-entries
+    description: Match scouting entries
+  - name: hp-entries
+    description: Human player scouting entries
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +26,101 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /match-entries:
+    get:
+      operationId: getMatchEntries
+      tags: [match-entries]
+      summary: Get all match scouting entries
+      responses:
+        "200":
+          description: List of match entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchEntry"
+    post:
+      operationId: createMatchEntry
+      tags: [match-entries]
+      summary: Submit a match scouting entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchEntry"
+      responses:
+        "201":
+          description: Match entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchEntry"
+
+  /match-entries/{id}:
+    delete:
+      operationId: deleteMatchEntry
+      tags: [match-entries]
+      summary: Delete a match entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /hp-entries:
+    get:
+      operationId: getHpEntries
+      tags: [hp-entries]
+      summary: Get all human player scouting entries
+      responses:
+        "200":
+          description: List of human player entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HpEntry"
+    post:
+      operationId: createHpEntry
+      tags: [hp-entries]
+      summary: Submit a human player scouting entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHpEntry"
+      responses:
+        "201":
+          description: Human player entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HpEntry"
+
+  /hp-entries/{id}:
+    delete:
+      operationId: deleteHpEntry
+      tags: [hp-entries]
+      summary: Delete a human player entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +131,104 @@ components:
       required:
         - status
 
+    ClimbData:
+      type: object
+      properties:
+        startTime:
+          type: number
+        location:
+          type: string
+        level:
+          type: string
+        success:
+          type: string
+        successTime:
+          type: number
+
+    CycleData:
+      type: object
+      properties:
+        starts:
+          type: array
+          items:
+            type: number
+        stops:
+          type: array
+          items:
+            type: number
+
+    CreateMatchEntry:
+      type: object
+      required:
+        - scouter
+        - teamNum
+        - matchNum
+        - startPos
+      properties:
+        scouter:
+          type: string
+        teamNum:
+          type: string
+        matchNum:
+          type: integer
+        startPos:
+          type: string
+        autoCycles:
+          $ref: "#/components/schemas/CycleData"
+        autoClimb:
+          $ref: "#/components/schemas/ClimbData"
+        teleCycles:
+          $ref: "#/components/schemas/CycleData"
+        teleClimb:
+          $ref: "#/components/schemas/ClimbData"
+        comments:
+          type: string
+        defensePlayed:
+          type: string
+        defenseRating:
+          type: string
+
+    MatchEntry:
+      allOf:
+        - $ref: "#/components/schemas/CreateMatchEntry"
+        - type: object
+          required:
+            - id
+            - createdAt
+          properties:
+            id:
+              type: integer
+            createdAt:
+              type: string
+              format: date-time
+
+    CreateHpEntry:
+      type: object
+      required:
+        - scouter
+        - matchNum
+        - alliance
+        - scores
+      properties:
+        scouter:
+          type: string
+        matchNum:
+          type: integer
+        alliance:
+          type: string
+        scores:
+          type: integer
+
+    HpEntry:
+      allOf:
+        - $ref: "#/components/schemas/CreateHpEntry"
+        - type: object
+          required:
+            - id
+            - createdAt
+          properties:
+            id:
+              type: integer
+            createdAt:
+              type: string
+              format: date-time

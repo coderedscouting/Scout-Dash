@@ -1,0 +1,67 @@
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { Layout } from "@/components/Layout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Activity, ClipboardList, UserRound, Database } from "lucide-react";
+
+export default function Home() {
+  const links = [
+    { href: "/match", title: "Match Scout", icon: Activity, desc: "Record live robot performance during matches", color: "text-primary" },
+    { href: "/pit", title: "Pit Scout", icon: ClipboardList, desc: "Log offline robot specifications and photos", color: "text-orange-500" },
+    { href: "/humanplayer", title: "Human Player Scout", icon: UserRound, desc: "Track human player shots and performance", color: "text-blue-500" },
+    { href: "/data", title: "View Data", icon: Database, desc: "Analyze submitted scout entries", color: "text-emerald-500" },
+  ];
+
+  return (
+    <Layout showBack={false}>
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <img 
+            src={`${import.meta.env.BASE_URL}images/logo.png`} 
+            alt="Code Red Logo" 
+            className="w-32 h-32 mx-auto mb-6 object-contain filter drop-shadow-[0_0_15px_rgba(230,0,0,0.6)]"
+          />
+          <h1 className="text-5xl md:text-6xl font-display font-bold text-white mb-4 tracking-wider uppercase text-shadow-red">
+            Code Red 2771
+          </h1>
+          <p className="text-xl text-muted-foreground font-medium">
+            2026 FRC Scouting Application
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+          {links.map((link, i) => (
+            <motion.div
+              key={link.href}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Link href={link.href} className="block group">
+                <Card className="h-full border-white/5 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(230,0,0,0.3)] bg-gradient-to-br from-card/80 to-background/90">
+                  <CardContent className="p-8 flex items-start gap-6">
+                    <div className={`p-4 rounded-xl bg-white/5 group-hover:bg-primary/10 transition-colors ${link.color}`}>
+                      <link.icon className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-display font-semibold mb-2 group-hover:text-primary transition-colors">
+                        {link.title}
+                      </h2>
+                      <p className="text-muted-foreground">
+                        {link.desc}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </Layout>
+  );
+}
