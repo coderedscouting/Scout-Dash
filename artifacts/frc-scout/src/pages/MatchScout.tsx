@@ -58,9 +58,12 @@ export default function MatchScout() {
   const { toast } = useToast();
   const createMatch = useCreateMatchEntry();
 
+  const MATCH_DURATION = 150; // 2:30 total match time
+  const AUTO_END = 130;       // auto ends when 20s have elapsed (150 - 20 = 130)
+
   const [formData, setFormData] = useState<CreateMatchEntry>(emptyForm);
   const [currentPage, setCurrentPage] = useState(0); // 0: Pre, 1: Auto, 2: Teleop, 3: Post
-  const [timer, setTimer] = useState(0);
+  const [timer, setTimer] = useState(MATCH_DURATION);
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -73,15 +76,22 @@ export default function MatchScout() {
     if (isActive && !isPaused) {
       interval = setInterval(() => {
         setTimer((prev) => {
-          if (prev === 19 && currentPage === 1) {
+          // Auto → Teleop transition at the 20-second mark
+          if (prev === AUTO_END + 1 && currentPage === 1) {
             setIsPaused(true);
             setTimeout(() => {
               setIsPaused(false);
               setCurrentPage(2);
             }, 2000);
-            return 19;
+            return AUTO_END;
           }
-          return prev + 1;
+          // Stop at zero and advance to post-match
+          if (prev <= 1) {
+            setIsActive(false);
+            setCurrentPage(3);
+            return 0;
+          }
+          return prev - 1;
         });
       }, 1000);
     }
@@ -97,7 +107,7 @@ export default function MatchScout() {
   };
 
   const handleStartTimer = () => {
-    if (timer === 0) {
+    if (timer === MATCH_DURATION) {
       setCurrentPage(1); // Jump to Auto
     }
     setIsActive(true);
@@ -108,7 +118,7 @@ export default function MatchScout() {
   
   const handleReset = () => {
     if (confirm("Reset current match? All progress will be lost.")) {
-      setTimer(0);
+      setTimer(MATCH_DURATION);
       setIsActive(false);
       setIsPaused(false);
       setCurrentPage(0);
@@ -136,7 +146,7 @@ export default function MatchScout() {
         scouter: prev.scouter,
         matchNum: prev.matchNum + 1
       }));
-      setTimer(0);
+      setTimer(MATCH_DURATION);
       setIsActive(false);
       setCurrentPage(0);
       setIsShooting(false);
@@ -198,7 +208,7 @@ export default function MatchScout() {
       <div className="mb-8 sticky top-20 z-30">
         <Card className="border-primary/30 overflow-hidden relative">
           {isActive && (
-            <div className={`absolute top-0 left-0 h-1 bg-primary transition-all duration-1000 ease-linear`} style={{ width: `${Math.min(100, (timer / 150) * 100)}%` }} />
+            <div className={`absolute top-0 left-0 h-1 bg-primary transition-all duration-1000 ease-linear`} style={{ width: `${Math.min(100, ((MATCH_DURATION - timer) / MATCH_DURATION) * 100)}%` }} />
           )}
           <div className="p-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
             
@@ -220,7 +230,7 @@ export default function MatchScout() {
               </div>
 
               <div className="flex gap-2">
-                {!isActive && timer === 0 ? (
+                {!isActive && timer === MATCH_DURATION ? (
                   <Button size="icon" className="h-12 w-12 rounded-full" onClick={handleStartTimer}>
                     <Play className="h-6 w-6 ml-1" />
                   </Button>
