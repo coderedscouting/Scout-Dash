@@ -9,6 +9,7 @@ import { useCreateMatchEntry, CreateMatchEntry } from "@/hooks/use-scout-api";
 import { Play, Square, Pause, RotateCcw, Save, ShieldAlert, Crosshair, MapPin, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { sendMatchToSheets } from "@/lib/googleSheets";
 
 // Helper components
 const BigToggle = ({ 
@@ -124,8 +125,12 @@ export default function MatchScout() {
     }
     
     try {
-      await createMatch.mutateAsync(formData);
-      toast({ title: "Success!", description: `Match ${formData.matchNum} submitted for team ${formData.teamNum}` });
+      // Save locally and send to Google Sheets simultaneously
+      await Promise.all([
+        createMatch.mutateAsync(formData),
+        sendMatchToSheets(formData),
+      ]);
+      toast({ title: "Success!", description: `Match ${formData.matchNum} submitted for team ${formData.teamNum} and sent to Google Sheets.` });
       setFormData(prev => ({
         ...emptyForm,
         scouter: prev.scouter,
