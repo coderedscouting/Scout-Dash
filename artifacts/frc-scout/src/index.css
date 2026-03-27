@@ -58,8 +58,14 @@
 }
 
 @layer base {
+  html {
+    overflow-y: auto;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased font-sans min-h-screen overflow-x-hidden;
+    @apply bg-background text-foreground antialiased font-sans min-h-screen;
+    overflow-x: hidden;
+    overflow-y: auto;
     background-image: 
       radial-gradient(circle at 50% 0%, rgba(230, 0, 0, 0.08) 0%, transparent 50%),
       linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.9));
