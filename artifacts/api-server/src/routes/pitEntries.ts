@@ -23,14 +23,12 @@ router.post("/pit-entries", async (req, res) => {
       .values({
         scouter: body.scouter,
         teamNum: body.teamNum,
+        teamName: body.teamName ?? "",
         drivetrain: body.drivetrain ?? "",
-        autoScore: body.autoScore ?? "",
-        autoLocations: body.autoLocations ?? "",
-        teleopScore: body.teleopScore ?? "",
+        avgCapacity: body.avgCapacity ?? "",
+        autoFuelCount: body.autoFuelCount ?? "",
         canClimb: body.canClimb ?? "",
-        climbLevel: body.climbLevel ?? "",
         climbLocation: body.climbLocation ?? "",
-        robotWeight: body.robotWeight ?? "",
         comments: body.comments ?? "",
       })
       .returning();

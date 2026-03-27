@@ -156,14 +156,12 @@ export const DeleteHpEntryParams = zod.object({
 export const CreatePitEntryBody = zod.object({
   scouter: zod.string(),
   teamNum: zod.string(),
+  teamName: zod.string().optional(),
   drivetrain: zod.string().optional(),
-  autoScore: zod.string().optional(),
-  autoLocations: zod.string().optional(),
-  teleopScore: zod.string().optional(),
+  avgCapacity: zod.string().optional(),
+  autoFuelCount: zod.string().optional(),
   canClimb: zod.string().optional(),
-  climbLevel: zod.string().optional(),
   climbLocation: zod.string().optional(),
-  robotWeight: zod.string().optional(),
   comments: zod.string().optional(),
 });
 

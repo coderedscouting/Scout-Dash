@@ -45,14 +45,12 @@ export async function sendPitToSheets(data: CreatePitEntry): Promise<void> {
   await postToSheets("pit", {
     scouter: data.scouter,
     teamNum: data.teamNum,
+    teamName: data.teamName,
     drivetrain: data.drivetrain,
-    autoScore: data.autoScore,
-    autoLocations: data.autoLocations,
-    teleopScore: data.teleopScore,
+    avgCapacity: data.avgCapacity,
+    autoFuelCount: data.autoFuelCount,
     canClimb: data.canClimb,
-    climbLevel: data.climbLevel,
     climbLocation: data.climbLocation,
-    robotWeight: data.robotWeight,
     comments: data.comments,
   });
 }

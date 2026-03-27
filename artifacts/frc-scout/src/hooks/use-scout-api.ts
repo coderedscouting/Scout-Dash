@@ -47,14 +47,12 @@ export interface HpEntry extends CreateHpEntry {
 export interface CreatePitEntry {
   scouter: string;
   teamNum: string;
+  teamName: string;
   drivetrain: string;
-  autoScore: string;
-  autoLocations: string;
-  teleopScore: string;
+  avgCapacity: string;
+  autoFuelCount: string;
   canClimb: string;
-  climbLevel: string;
   climbLocation: string;
-  robotWeight: string;
   comments: string;
 }
 

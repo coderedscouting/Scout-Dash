@@ -39,14 +39,12 @@ const BigToggle = ({
 const emptyForm: CreatePitEntry = {
   scouter: "",
   teamNum: "",
+  teamName: "",
   drivetrain: "",
-  autoScore: "",
-  autoLocations: "",
-  teleopScore: "",
+  avgCapacity: "",
+  autoFuelCount: "",
   canClimb: "",
-  climbLevel: "",
   climbLocation: "",
-  robotWeight: "",
   comments: "",
 };
 
@@ -86,18 +84,29 @@ export default function PitScout() {
           Pit Scout
         </motion.h1>
 
-        {/* Identity */}
+        {/* Scouter */}
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <h3 className="font-display text-xl border-b border-white/10 pb-2">Scouter</h3>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold uppercase text-muted-foreground">Scouter Name</label>
+              <Input placeholder="John D." value={formData.scouter} onChange={e => set("scouter")(e.target.value)} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Team Info */}
         <Card>
           <CardContent className="p-6 space-y-6">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Info</h3>
+            <h3 className="font-display text-xl border-b border-white/10 pb-2">Team</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold uppercase text-muted-foreground">Scouter Name</label>
-                <Input placeholder="John D." value={formData.scouter} onChange={e => set("scouter")(e.target.value)} />
-              </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold uppercase text-muted-foreground">Team Number</label>
                 <Input placeholder="2771" type="number" value={formData.teamNum} onChange={e => set("teamNum")(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase text-muted-foreground">Team Name</label>
+                <Input placeholder="Code Red Robotics" value={formData.teamName} onChange={e => set("teamName")(e.target.value)} />
               </div>
             </div>
           </CardContent>
@@ -107,8 +116,21 @@ export default function PitScout() {
         <Card>
           <CardContent className="p-6 space-y-6">
             <h3 className="font-display text-xl border-b border-white/10 pb-2">Robot</h3>
-            <BigToggle label="Drivetrain" options={["Swerve", "Tank", "Mecanum", "Other"]} selected={formData.drivetrain} onChange={set("drivetrain")} />
-            <BigToggle label="Robot Weight" options={["Light", "Medium", "Heavy"]} selected={formData.robotWeight} onChange={set("robotWeight")} />
+            <BigToggle
+              label="Drive Train"
+              options={["Swerve", "Tank", "Mecanum", "Other"]}
+              selected={formData.drivetrain}
+              onChange={set("drivetrain")}
+            />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold uppercase text-muted-foreground">Avg. Capacity (game pieces)</label>
+              <Input
+                placeholder="e.g. 3"
+                type="number"
+                value={formData.avgCapacity}
+                onChange={e => set("avgCapacity")(e.target.value)}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -116,46 +138,50 @@ export default function PitScout() {
         <Card>
           <CardContent className="p-6 space-y-6">
             <h3 className="font-display text-xl border-b border-white/10 pb-2">Auto</h3>
-            <BigToggle label="Can they score in Auto?" options={["Yes", "No"]} selected={formData.autoScore} onChange={set("autoScore")} />
-            {formData.autoScore === "Yes" && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-                <BigToggle label="Scoring Locations" options={["Amp", "Speaker", "Both"]} selected={formData.autoLocations} onChange={set("autoLocations")} />
-              </motion.div>
-            )}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold uppercase text-muted-foreground">How many fuel can they score in Auto?</label>
+              <Input
+                placeholder="e.g. 5"
+                type="number"
+                value={formData.autoFuelCount}
+                onChange={e => set("autoFuelCount")(e.target.value)}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Teleop */}
+        {/* Climb */}
         <Card>
           <CardContent className="p-6 space-y-6">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Teleop</h3>
-            <BigToggle label="Can they score in Teleop?" options={["Yes", "No"]} selected={formData.teleopScore} onChange={set("teleopScore")} />
-          </CardContent>
-        </Card>
-
-        {/* Endgame */}
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Endgame / Climb</h3>
-            <BigToggle label="Can they climb?" options={["Yes", "No"]} selected={formData.canClimb} onChange={val => setFormData(prev => ({ ...prev, canClimb: val, climbLevel: "", climbLocation: "" }))} />
+            <h3 className="font-display text-xl border-b border-white/10 pb-2">Climb</h3>
+            <BigToggle
+              label="Can they climb?"
+              options={["Yes", "No"]}
+              selected={formData.canClimb}
+              onChange={val => setFormData(prev => ({ ...prev, canClimb: val, climbLocation: "" }))}
+            />
             {formData.canClimb === "Yes" && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-6">
-                <BigToggle label="Max Climb Level" options={["L1", "L2", "L3"]} selected={formData.climbLevel} onChange={set("climbLevel")} />
-                <BigToggle label="Climb Location" options={["Center", "Side"]} selected={formData.climbLocation} onChange={set("climbLocation")} />
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+                <BigToggle
+                  label="Where?"
+                  options={["Center", "Side", "Both"]}
+                  selected={formData.climbLocation}
+                  onChange={set("climbLocation")}
+                />
               </motion.div>
             )}
           </CardContent>
         </Card>
 
-        {/* Comments */}
+        {/* Notes */}
         <Card>
           <CardContent className="p-6 space-y-4">
             <h3 className="font-display text-xl border-b border-white/10 pb-2">Notes</h3>
             <Textarea
-              placeholder="Additional observations, unique mechanisms, notable features..."
+              placeholder="Additional observations..."
               value={formData.comments}
               onChange={e => set("comments")(e.target.value)}
-              className="min-h-[120px]"
+              className="min-h-[100px]"
             />
           </CardContent>
         </Card>
