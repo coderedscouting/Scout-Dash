@@ -1,7 +1,7 @@
 import type { CreateMatchEntry, CreateHpEntry, CreatePitEntry } from "@/hooks/use-scout-api";
 
 // Paste your Google Apps Script Web App URL here after deploying it
-const WEB_APP_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx6-L2P7hGM0nvSQy4hQxR3IACO_npXeOQARuuType-4dgURGjiGWzsrZeUE8Rd_BNR/exec";
 
 async function postToSheets(type: "match" | "pit" | "hp", data: unknown) {
   if (!WEB_APP_URL || WEB_APP_URL === "PASTE_YOUR_APPS_SCRIPT_URL_HERE") return;
