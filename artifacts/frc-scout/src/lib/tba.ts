@@ -78,6 +78,18 @@ export async function getCuratedEvents(): Promise<TBAEvent[]> {
   });
 }
 
+export interface TBATeam {
+  key: string;
+  team_number: number;
+  nickname: string;
+  name: string;
+}
+
+export async function getEventTeams(eventKey: string): Promise<TBATeam[]> {
+  const teams = await tbaFetch<TBATeam[]>(`/event/${eventKey}/teams/simple`);
+  return teams.sort((a, b) => a.team_number - b.team_number);
+}
+
 export async function getEventMatches(eventKey: string): Promise<TBAMatch[]> {
   return tbaFetch<TBAMatch[]>(`/event/${eventKey}/matches`);
 }

@@ -1,14 +1,15 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Save } from "lucide-react";
+import { Save, ChevronDown, Search, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useCreatePitEntry, CreatePitEntry } from "@/hooks/use-scout-api";
+import { useCreatePitEntry, usePitEntries, useEventSettings, CreatePitEntry } from "@/hooks/use-scout-api";
 import { sendPitToSheets } from "@/lib/googleSheets";
+import { getEventTeams, type TBATeam } from "@/lib/tba";
 
 const BigToggle = ({
   label, options, selected, onChange,
@@ -36,6 +37,133 @@ const BigToggle = ({
   </div>
 );
 
+// Searchable team dropdown
+function TeamDropdown({
+  teams,
+  scoutedNums,
+  selected,
+  onSelect,
+}: {
+  teams: TBATeam[];
+  scoutedNums: Set<string>;
+  selected: TBATeam | null;
+  onSelect: (team: TBATeam) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const available = teams.filter(t => !scoutedNums.has(String(t.team_number)));
+  const filtered = available.filter(t => {
+    const q = search.toLowerCase();
+    return (
+      String(t.team_number).includes(q) ||
+      (t.nickname ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const doneCount = scoutedNums.size;
+  const totalCount = teams.length;
+
+  return (
+    <div className="space-y-2" ref={ref}>
+      <label className="text-sm font-semibold uppercase text-muted-foreground">
+        Select Team
+        {totalCount > 0 && (
+          <span className="ml-2 text-xs font-normal text-white/40 normal-case">
+            {doneCount}/{totalCount} scouted
+          </span>
+        )}
+      </label>
+
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-left transition-all ${
+          selected
+            ? "border-primary/50 bg-primary/10 text-white"
+            : "border-white/15 bg-black/40 text-white/40 hover:border-white/30 hover:text-white/70"
+        }`}
+      >
+        <span className="font-semibold">
+          {selected
+            ? `${selected.team_number} — ${selected.nickname}`
+            : "Pick a team…"}
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {/* Dropdown panel */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="relative z-50"
+          >
+            <div className="absolute w-full mt-1 rounded-lg border border-white/15 bg-[#111] shadow-2xl overflow-hidden">
+              {/* Search */}
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
+                <Search className="h-4 w-4 text-white/30 shrink-0" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search by number or name…"
+                  className="w-full bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
+                />
+              </div>
+
+              {/* Team list */}
+              <div className="max-h-64 overflow-y-auto">
+                {filtered.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-white/30">
+                    {available.length === 0 ? "All teams scouted!" : "No teams match your search."}
+                  </div>
+                ) : (
+                  filtered.map(team => (
+                    <button
+                      key={team.key}
+                      type="button"
+                      onClick={() => { onSelect(team); setOpen(false); setSearch(""); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                    >
+                      <span className="font-display font-bold text-lg text-primary w-14 shrink-0">
+                        {team.team_number}
+                      </span>
+                      <span className="text-sm text-white/80 truncate">{team.nickname}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Already scouted count */}
+              {doneCount > 0 && (
+                <div className="px-4 py-2 border-t border-white/10 text-xs text-white/30 flex items-center gap-1.5">
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  {doneCount} team{doneCount !== 1 ? "s" : ""} already scouted — hidden from list
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 const emptyForm: CreatePitEntry = {
   scouter: "",
   teamNum: "",
@@ -51,14 +179,45 @@ const emptyForm: CreatePitEntry = {
 export default function PitScout() {
   const { toast } = useToast();
   const createPit = useCreatePitEntry();
+  const { data: pitEntries = [] } = usePitEntries();
+  const { data: eventSettings } = useEventSettings();
+
   const [formData, setFormData] = useState<CreatePitEntry>(emptyForm);
+  const [selectedTeam, setSelectedTeam] = useState<TBATeam | null>(null);
+  const [teams, setTeams] = useState<TBATeam[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+  const [teamsError, setTeamsError] = useState(false);
+
+  // Build set of already-scouted team numbers for this event
+  const scoutedNums = new Set(pitEntries.map(e => e.teamNum));
+
+  // Load teams from TBA when event is ready
+  useEffect(() => {
+    const eventKey = eventSettings?.eventKey;
+    if (!eventKey) return;
+    setTeamsLoading(true);
+    setTeamsError(false);
+    getEventTeams(eventKey)
+      .then(setTeams)
+      .catch(() => setTeamsError(true))
+      .finally(() => setTeamsLoading(false));
+  }, [eventSettings?.eventKey]);
 
   const set = (field: keyof CreatePitEntry) => (val: string) =>
     setFormData(prev => ({ ...prev, [field]: val }));
 
+  const handleTeamSelect = (team: TBATeam) => {
+    setSelectedTeam(team);
+    setFormData(prev => ({
+      ...prev,
+      teamNum: String(team.team_number),
+      teamName: team.nickname ?? "",
+    }));
+  };
+
   const handleSubmit = async () => {
     if (!formData.scouter || !formData.teamNum) {
-      toast({ title: "Validation Error", description: "Scouter name and Team Number are required.", variant: "destructive" });
+      toast({ title: "Validation Error", description: "Scouter name and Team are required.", variant: "destructive" });
       return;
     }
     try {
@@ -68,10 +227,13 @@ export default function PitScout() {
       ]);
       toast({ title: "Success!", description: `Pit data for team ${formData.teamNum} submitted.` });
       setFormData(prev => ({ ...emptyForm, scouter: prev.scouter }));
+      setSelectedTeam(null);
     } catch {
       toast({ title: "Error", description: "Failed to submit pit entry.", variant: "destructive" });
     }
   };
+
+  const eventConfigured = !!eventSettings?.eventKey;
 
   return (
     <Layout showBack={true}>
@@ -95,20 +257,46 @@ export default function PitScout() {
           </CardContent>
         </Card>
 
-        {/* Team Info */}
+        {/* Team selector */}
         <Card>
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-6 space-y-4">
             <h3 className="font-display text-xl border-b border-white/10 pb-2">Team</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold uppercase text-muted-foreground">Team Number</label>
-                <Input placeholder="2771" type="number" value={formData.teamNum} onChange={e => set("teamNum")(e.target.value)} />
+
+            {!eventConfigured ? (
+              <div className="flex items-center gap-2 text-yellow-400 text-sm py-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                No event configured — contact your team lead to set the active event.
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold uppercase text-muted-foreground">Team Name</label>
-                <Input placeholder="Code Red Robotics" value={formData.teamName} onChange={e => set("teamName")(e.target.value)} />
+            ) : teamsLoading ? (
+              <div className="flex items-center gap-2 text-white/40 text-sm py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading teams…
               </div>
-            </div>
+            ) : teamsError ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-yellow-400 text-sm">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  Couldn't load team list — enter manually below.
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold uppercase text-muted-foreground">Team Number</label>
+                    <Input placeholder="2771" type="number" value={formData.teamNum} onChange={e => set("teamNum")(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold uppercase text-muted-foreground">Team Name</label>
+                    <Input placeholder="Code Red Robotics" value={formData.teamName} onChange={e => set("teamName")(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <TeamDropdown
+                teams={teams}
+                scoutedNums={scoutedNums}
+                selected={selectedTeam}
+                onSelect={handleTeamSelect}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -160,16 +348,18 @@ export default function PitScout() {
               selected={formData.canClimb}
               onChange={val => setFormData(prev => ({ ...prev, canClimb: val, climbLocation: "" }))}
             />
-            {formData.canClimb === "Yes" && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-                <BigToggle
-                  label="Where?"
-                  options={["Center", "Side", "Both"]}
-                  selected={formData.climbLocation}
-                  onChange={set("climbLocation")}
-                />
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {formData.canClimb === "Yes" && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                  <BigToggle
+                    label="Where?"
+                    options={["Center", "Side", "Both"]}
+                    selected={formData.climbLocation}
+                    onChange={set("climbLocation")}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Card>
 
