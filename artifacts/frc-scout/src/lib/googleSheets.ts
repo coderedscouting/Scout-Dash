@@ -12,55 +12,80 @@ async function getEventKey(): Promise<string> {
   }
 }
 
-async function postToSheets(type: "match" | "pit" | "hp", data: unknown) {
+async function postToSheets(payload: unknown) {
   if (!WEB_APP_URL || WEB_APP_URL === "PASTE_YOUR_APPS_SCRIPT_URL_HERE") return;
-  const eventKey = await getEventKey();
   await fetch(WEB_APP_URL, {
     method: "POST",
     mode: "no-cors",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, eventKey, data }),
+    body: JSON.stringify(payload),
   });
 }
 
 export async function sendMatchToSheets(data: CreateMatchEntry): Promise<void> {
-  await postToSheets("match", {
-    scouter: data.scouter,
-    teamNum: data.teamNum,
-    matchNum: data.matchNum,
-    startPos: data.startPos,
-    autoCycles: data.autoCycles.stops.length,
-    autoClimbLocation: data.autoClimb.location,
-    autoClimbSuccess: data.autoClimb.success,
-    teleCycles: data.teleCycles.stops.length,
-    teleClimbLocation: data.teleClimb.location,
-    teleClimbLevel: data.teleClimb.level,
-    teleClimbSuccess: data.teleClimb.success,
-    defensePlayed: data.defensePlayed,
-    defenseRating: data.defenseRating,
-    comments: data.comments,
+  const eventKey = await getEventKey();
+  await postToSheets({
+    eventKey,
+    matchData: [{
+      scouter: data.scouter,
+      teamNum: data.teamNum,
+      matchNum: data.matchNum,
+      startPos: data.startPos,
+      autoCycles: {
+        starts: data.autoCycles.starts,
+        stops: data.autoCycles.stops,
+      },
+      autoClimb: {
+        startTime: data.autoClimb.startTime,
+        location: data.autoClimb.location,
+        success: data.autoClimb.success,
+        successTime: data.autoClimb.successTime,
+      },
+      teleCycles: {
+        starts: data.teleCycles.starts,
+        stops: data.teleCycles.stops,
+      },
+      teleClimb: {
+        startTime: data.teleClimb.startTime,
+        location: data.teleClimb.location,
+        level: data.teleClimb.level,
+        success: data.teleClimb.success,
+        successTime: data.teleClimb.successTime,
+      },
+      comments: data.comments,
+      defensePlayed: data.defensePlayed,
+      defenseRating: data.defenseRating,
+    }],
   });
 }
 
 export async function sendHpToSheets(data: CreateHpEntry): Promise<void> {
-  await postToSheets("hp", {
-    scouter: data.scouter,
-    matchNum: data.matchNum,
-    alliance: data.alliance,
-    scores: data.scores,
+  const eventKey = await getEventKey();
+  await postToSheets({
+    eventKey,
+    hpData: [{
+      scouter: data.scouter,
+      matchNum: data.matchNum,
+      alliance: data.alliance,
+      scores: data.scores,
+    }],
   });
 }
 
 export async function sendPitToSheets(data: CreatePitEntry): Promise<void> {
-  await postToSheets("pit", {
-    scouter: data.scouter,
-    teamNum: data.teamNum,
-    teamName: data.teamName,
-    drivetrain: data.drivetrain,
-    avgCapacity: data.avgCapacity,
-    autoFuelCount: data.autoFuelCount,
-    canClimb: data.canClimb,
-    climbLocation: data.climbLocation,
-    comments: data.comments,
+  const eventKey = await getEventKey();
+  await postToSheets({
+    eventKey,
+    pitData: [{
+      scouter: data.scouter,
+      teamNum: data.teamNum,
+      teamName: data.teamName,
+      drivetrain: data.drivetrain,
+      avgCapacity: data.avgCapacity,
+      autoFuelCount: data.autoFuelCount,
+      canClimb: data.canClimb,
+      climbLocation: data.climbLocation,
+      comments: data.comments,
+    }],
   });
 }
