@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCreateMatchEntry, CreateMatchEntry } from "@/hooks/use-scout-api";
+import { useCreateMatchEntry, useEventSettings, CreateMatchEntry } from "@/hooks/use-scout-api";
 import { Square, Save, ShieldAlert, Crosshair, MapPin, Zap, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { sendMatchToSheets } from "@/lib/googleSheets";
-import { TBA_STORAGE, getEventMatches, getTeamsForMatch, type TBAMatch, type MatchTeams } from "@/lib/tba";
+import { getEventMatches, getTeamsForMatch, type TBAMatch, type MatchTeams } from "@/lib/tba";
 
 const BigToggle = ({
   label, options, selected, onChange, disabled = false
@@ -119,13 +119,16 @@ export default function MatchScout() {
   // TBA state
   const [tbaMatches, setTbaMatches] = useState<TBAMatch[]>([]);
   const [tbaLoading, setTbaLoading] = useState(false);
-  const [tbaEventName] = useState(TBA_STORAGE.getEventName);
   const [matchTeams, setMatchTeams] = useState<MatchTeams | null>(null);
-  const tbaConfigured = !!TBA_STORAGE.getEventKey();
 
-  // Load all matches for the event on mount
+  // Event key/name from the database (set by team lead)
+  const { data: eventSettings } = useEventSettings();
+  const tbaEventName = eventSettings?.eventName ?? "";
+  const tbaConfigured = !!eventSettings?.eventKey;
+
+  // Load all matches for the event once we have the event key
   useEffect(() => {
-    const eventKey = TBA_STORAGE.getEventKey();
+    const eventKey = eventSettings?.eventKey;
     if (!eventKey) return;
 
     setTbaLoading(true);
@@ -133,7 +136,7 @@ export default function MatchScout() {
       .then(setTbaMatches)
       .catch(() => {}) // silently fail, will fall back to manual
       .finally(() => setTbaLoading(false));
-  }, []);
+  }, [eventSettings?.eventKey]);
 
   // Update team picker when match number changes
   useEffect(() => {

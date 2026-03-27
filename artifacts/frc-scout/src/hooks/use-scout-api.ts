@@ -61,6 +61,24 @@ export interface PitEntry extends CreatePitEntry {
   createdAt: string;
 }
 
+// Settings hook
+export interface EventSettings {
+  eventKey: string;
+  eventName: string;
+}
+
+export function useEventSettings() {
+  return useQuery<EventSettings>({
+    queryKey: ["/api/settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to fetch settings");
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+}
+
 // Match hooks
 export function useMatchEntries() {
   return useQuery<MatchEntry[]>({

@@ -1,58 +1,20 @@
-import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Activity, ClipboardList, UserRound, Settings, CheckCircle, Loader2, X, ChevronRight } from "lucide-react";
-import { getCuratedEvents, TBA_STORAGE, type TBAEvent } from "@/lib/tba";
-import { useToast } from "@/hooks/use-toast";
+import { Activity, ClipboardList, UserRound, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { useEventSettings } from "@/hooks/use-scout-api";
 
 export default function Home() {
-  const { toast } = useToast();
+  const { data: settings, isLoading } = useEventSettings();
+
   const links = [
     { href: "/match", title: "Match Scout", icon: Activity, desc: "Record live robot performance during matches", color: "text-primary" },
     { href: "/pit", title: "Pit Scout", icon: ClipboardList, desc: "Log offline robot specifications and photos", color: "text-orange-500" },
     { href: "/humanplayer", title: "Human Player Scout", icon: UserRound, desc: "Track human player shots and performance", color: "text-blue-500" },
   ];
 
-  const [showSetup, setShowSetup] = useState(false);
-  const [eventKey, setEventKey] = useState(TBA_STORAGE.getEventKey);
-  const [eventName, setEventName] = useState(TBA_STORAGE.getEventName);
-  const [events, setEvents] = useState<TBAEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  const isConfigured = !!eventKey;
-
-  // Auto-fetch events when setup panel opens
-  useEffect(() => {
-    if (!showSetup || loaded) return;
-    setLoading(true);
-    getCuratedEvents()
-      .then(data => { setEvents(data); setLoaded(true); })
-      .catch(() => toast({ title: "Couldn't load events", description: "Check your internet connection.", variant: "destructive" }))
-      .finally(() => setLoading(false));
-  }, [showSetup]);
-
-  const handleSelectEvent = (event: TBAEvent) => {
-    TBA_STORAGE.setEventKey(event.key);
-    TBA_STORAGE.setEventName(event.name);
-    setEventKey(event.key);
-    setEventName(event.name);
-    toast({ title: "Event Set!", description: `Now scouting: ${event.name}` });
-    setShowSetup(false);
-  };
-
-  const handleClearEvent = () => {
-    TBA_STORAGE.clear();
-    setEventKey("");
-    setEventName("");
-  };
-
-  // Group events: district events first, then state champs
-  const districtEvents = events.filter(e => e.event_type === 1 || e.event_type === 0);
-  const champEvents = events.filter(e => e.event_type === 2 || e.event_type === 5);
+  const eventConfigured = !!settings?.eventKey;
 
   return (
     <Layout showBack={false}>
@@ -97,98 +59,36 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Event Configuration */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="w-full max-w-4xl">
-          {!showSetup ? (
-            <button
-              onClick={() => setShowSetup(true)}
-              className="w-full flex items-center justify-between px-5 py-4 rounded-xl border border-white/10 bg-black/30 hover:border-primary/40 hover:bg-black/50 transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                {isConfigured
-                  ? <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
-                  : <Settings className="h-5 w-5 text-white/40 group-hover:text-white/70 transition-colors shrink-0" />}
-                <span className="text-sm font-semibold uppercase tracking-wider">
-                  {isConfigured
-                    ? <span className="text-green-400">Event: <span className="text-white">{eventName}</span></span>
-                    : <span className="text-white/50">Select Event</span>}
+        {/* Active Event — read-only, set via database */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="w-full max-w-4xl"
+        >
+          <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-white/10 bg-black/30">
+            {isLoading ? (
+              <>
+                <Loader2 className="h-5 w-5 text-white/30 animate-spin shrink-0" />
+                <span className="text-sm text-white/30">Loading event…</span>
+              </>
+            ) : eventConfigured ? (
+              <>
+                <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                <span className="text-sm">
+                  <span className="font-bold uppercase tracking-wider text-white/50 mr-2">Active Event</span>
+                  <span className="text-white font-semibold">{settings.eventName}</span>
                 </span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-white/30 group-hover:text-white/50" />
-            </button>
-          ) : (
-            <Card className="border-white/10">
-              <CardContent className="p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display text-lg uppercase tracking-wider">Select Event</h3>
-                  <button onClick={() => setShowSetup(false)} className="text-white/40 hover:text-white transition-colors">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-
-                {loading && (
-                  <div className="flex items-center justify-center gap-2 py-8 text-white/40">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span className="text-sm">Loading events...</span>
-                  </div>
-                )}
-
-                {!loading && events.length > 0 && (
-                  <div className="space-y-4">
-                    {districtEvents.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-xs font-bold uppercase tracking-widest text-white/30">District Events</div>
-                        {districtEvents.map(ev => (
-                          <EventButton key={ev.key} event={ev} selected={ev.key === eventKey} onSelect={handleSelectEvent} />
-                        ))}
-                      </div>
-                    )}
-                    {champEvents.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-xs font-bold uppercase tracking-widest text-white/30">Michigan State Championship</div>
-                        {champEvents.map(ev => (
-                          <EventButton key={ev.key} event={ev} selected={ev.key === eventKey} onSelect={handleSelectEvent} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {!loading && events.length === 0 && loaded && (
-                  <div className="text-center py-6 text-white/40 text-sm">No events found.</div>
-                )}
-
-                {isConfigured && (
-                  <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                    <span className="text-sm text-green-400 flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4" /> {eventName}
-                    </span>
-                    <button onClick={handleClearEvent} className="text-xs text-white/40 hover:text-red-400 transition-colors">
-                      Clear
-                    </button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0" />
+                <span className="text-sm text-yellow-400">No event set — ask your team lead to configure the event in the database.</span>
+              </>
+            )}
+          </div>
         </motion.div>
       </div>
     </Layout>
-  );
-}
-
-function EventButton({ event, selected, onSelect }: { event: TBAEvent; selected: boolean; onSelect: (e: TBAEvent) => void }) {
-  return (
-    <button
-      onClick={() => onSelect(event)}
-      className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
-        selected
-          ? "border-primary bg-primary/10 text-white"
-          : "border-white/10 bg-black/30 text-white/70 hover:border-white/30 hover:text-white"
-      }`}
-    >
-      <div className="font-semibold text-sm">{event.name}</div>
-      <div className="text-xs text-white/40 mt-0.5">{event.city}, {event.state_prov} · {event.start_date}</div>
-    </button>
   );
 }
