@@ -126,11 +126,10 @@ export default function MatchScout() {
   // Load all matches for the event on mount
   useEffect(() => {
     const eventKey = TBA_STORAGE.getEventKey();
-    const apiKey = TBA_STORAGE.getApiKey();
-    if (!eventKey || !apiKey) return;
+    if (!eventKey) return;
 
     setTbaLoading(true);
-    getEventMatches(apiKey, eventKey)
+    getEventMatches(eventKey)
       .then(setTbaMatches)
       .catch(() => {}) // silently fail, will fall back to manual
       .finally(() => setTbaLoading(false));
