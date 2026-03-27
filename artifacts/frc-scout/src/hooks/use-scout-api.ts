@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-// --- Types mapping to OpenAPI schema ---
 export interface ClimbData {
   startTime?: number | "";
   location?: string;
@@ -45,8 +44,26 @@ export interface HpEntry extends CreateHpEntry {
   createdAt: string;
 }
 
-// --- Hooks ---
+export interface CreatePitEntry {
+  scouter: string;
+  teamNum: string;
+  drivetrain: string;
+  autoScore: string;
+  autoLocations: string;
+  teleopScore: string;
+  canClimb: string;
+  climbLevel: string;
+  climbLocation: string;
+  robotWeight: string;
+  comments: string;
+}
 
+export interface PitEntry extends CreatePitEntry {
+  id: number;
+  createdAt: string;
+}
+
+// Match hooks
 export function useMatchEntries() {
   return useQuery<MatchEntry[]>({
     queryKey: ["/api/match-entries"],
@@ -70,12 +87,11 @@ export function useCreateMatchEntry() {
       if (!res.ok) throw new Error("Failed to create match entry");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/match-entries"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/match-entries"] }),
   });
 }
 
+// HP hooks
 export function useHpEntries() {
   return useQuery<HpEntry[]>({
     queryKey: ["/api/hp-entries"],
@@ -99,8 +115,34 @@ export function useCreateHpEntry() {
       if (!res.ok) throw new Error("Failed to create HP entry");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/hp-entries"] });
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/hp-entries"] }),
+  });
+}
+
+// Pit hooks
+export function usePitEntries() {
+  return useQuery<PitEntry[]>({
+    queryKey: ["/api/pit-entries"],
+    queryFn: async () => {
+      const res = await fetch("/api/pit-entries");
+      if (!res.ok) throw new Error("Failed to fetch pit entries");
+      return res.json();
     },
+  });
+}
+
+export function useCreatePitEntry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CreatePitEntry) => {
+      const res = await fetch("/api/pit-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create pit entry");
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/pit-entries"] }),
   });
 }

@@ -149,3 +149,27 @@ export const CreateHpEntryBody = zod.object({
 export const DeleteHpEntryParams = zod.object({
   id: zod.coerce.number(),
 });
+
+/**
+ * @summary Submit a pit scouting entry
+ */
+export const CreatePitEntryBody = zod.object({
+  scouter: zod.string(),
+  teamNum: zod.string(),
+  drivetrain: zod.string().optional(),
+  autoScore: zod.string().optional(),
+  autoLocations: zod.string().optional(),
+  teleopScore: zod.string().optional(),
+  canClimb: zod.string().optional(),
+  climbLevel: zod.string().optional(),
+  climbLocation: zod.string().optional(),
+  robotWeight: zod.string().optional(),
+  comments: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a pit entry
+ */
+export const DeletePitEntryParams = zod.object({
+  id: zod.coerce.number(),
+});
