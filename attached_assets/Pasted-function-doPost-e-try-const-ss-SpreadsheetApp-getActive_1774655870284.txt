@@ -1,0 +1,79 @@
+function doPost(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const data = JSON.parse(e.postData.contents);
+    
+    // 1. Handle Match Data
+    if (data.matchData && data.matchData.length > 0) {
+      const matchSheet = ss.getSheetByName("Match Data") || ss.insertSheet("Match Data");
+      
+      data.matchData.forEach(match => {
+        const row = [
+          match.scouter, match.teamNum, match.matchNum, match.startPos,
+          match.autoCycles.starts.join(", "), match.autoCycles.stops.join(", "),
+          match.autoClimb.startTime, match.autoClimb.location, match.autoClimb.success, match.autoClimb.successTime,
+          match.teleCycles.starts.join(", "), match.teleCycles.stops.join(", "),
+          match.teleClimb.startTime, match.teleClimb.location, match.teleClimb.level, match.teleClimb.success, match.teleClimb.successTime,
+          match.comments, match.defensePlayed, match.defenseRating
+        ];
+        matchSheet.appendRow(row);
+      });
+    }
+
+    // 2. Handle Human Player Data
+    if (data.hpData && data.hpData.length > 0) {
+      const hpSheet = ss.getSheetByName("Human Player Data") || ss.insertSheet("Human Player Data");
+      
+      // If the sheet is brand new, add headers (adjust these to match your HP object keys)
+      if (hpSheet.getLastRow() === 0) {
+        hpSheet.appendRow(["Scouter", "Team #", "Match #", "Station", "Notes"]); 
+      }
+
+      data.hpData.forEach(hp => {
+        // Map your specific HP object properties here
+        const row = [
+          hp.scouter,
+          hp.matchNum,
+          hp.alliance,
+          hp.scores
+        ];
+        hpSheet.appendRow(row);
+      });
+    }
+
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.message).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+function doGet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Helper to convert sheet data to a list of objects
+  const getSheetData = (sheetName) => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return [];
+    
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return []; // Only headers or empty
+    
+    const headers = values.shift();
+    return values.map(row => {
+      const obj = {};
+      headers.forEach((header, i) => {
+        obj[header] = row[i];
+      });
+      return obj;
+    });
+  };
+
+  const response = {
+    matchData: getSheetData("Match Data"),
+    hpData: getSheetData("Human Player Data"),
+    pitData: getSheetData("Pit Scouting")
+  };
+
+  return ContentService.createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
+}

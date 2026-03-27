@@ -1,15 +1,25 @@
 import type { CreateMatchEntry, CreateHpEntry, CreatePitEntry } from "@/hooks/use-scout-api";
 
-// Paste your Google Apps Script Web App URL here after deploying it
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx6-L2P7hGM0nvSQy4hQxR3IACO_npXeOQARuuType-4dgURGjiGWzsrZeUE8Rd_BNR/exec";
+
+async function getEventKey(): Promise<string> {
+  try {
+    const res = await fetch("/api/settings");
+    const data = await res.json();
+    return data.eventKey ?? "";
+  } catch {
+    return "";
+  }
+}
 
 async function postToSheets(type: "match" | "pit" | "hp", data: unknown) {
   if (!WEB_APP_URL || WEB_APP_URL === "PASTE_YOUR_APPS_SCRIPT_URL_HERE") return;
+  const eventKey = await getEventKey();
   await fetch(WEB_APP_URL, {
     method: "POST",
     mode: "no-cors",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, data }),
+    body: JSON.stringify({ type, eventKey, data }),
   });
 }
 
