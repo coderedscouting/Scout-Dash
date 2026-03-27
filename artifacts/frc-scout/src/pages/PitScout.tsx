@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,7 @@ const BigToggle = ({
   </div>
 );
 
-// Searchable team dropdown
+// Searchable team dropdown — renders panel via portal so it floats above all cards
 function TeamDropdown({
   teams,
   scoutedNums,
@@ -51,31 +52,51 @@ function TeamDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Position panel under the trigger button
+  const openDropdown = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPanelStyle({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    }
+    setOpen(true);
+  };
 
   // Close on outside click
   useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
+
+  // Close on scroll/resize so panel doesn't drift
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+  }, [open]);
 
   const available = teams.filter(t => !scoutedNums.has(String(t.team_number)));
   const filtered = available.filter(t => {
     const q = search.toLowerCase();
-    return (
-      String(t.team_number).includes(q) ||
-      (t.nickname ?? "").toLowerCase().includes(q)
-    );
+    return String(t.team_number).includes(q) || (t.nickname ?? "").toLowerCase().includes(q);
   });
 
   const doneCount = scoutedNums.size;
   const totalCount = teams.length;
 
   return (
-    <div className="space-y-2" ref={ref}>
+    <div className="space-y-2">
       <label className="text-sm font-semibold uppercase text-muted-foreground">
         Select Team
         {totalCount > 0 && (
@@ -87,8 +108,9 @@ function TeamDropdown({
 
       {/* Trigger */}
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => open ? setOpen(false) : openDropdown()}
         className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-left transition-all ${
           selected
             ? "border-primary/50 bg-primary/10 text-white"
@@ -96,70 +118,68 @@ function TeamDropdown({
         }`}
       >
         <span className="font-semibold">
-          {selected
-            ? `${selected.team_number} — ${selected.nickname}`
-            : "Pick a team…"}
+          {selected ? `${selected.team_number} — ${selected.nickname}` : "Pick a team…"}
         </span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Dropdown panel */}
-      <AnimatePresence>
-        {open && (
+      {/* Portal-rendered panel — sits above everything */}
+      {open && createPortal(
+        <AnimatePresence>
           <motion.div
-            initial={{ opacity: 0, y: -6 }}
+            ref={panelRef}
+            initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.15 }}
-            className="relative z-50"
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            style={{ position: "fixed", top: panelStyle.top, left: panelStyle.left, width: panelStyle.width, zIndex: 9999 }}
+            className="rounded-lg border border-white/15 bg-[#111] shadow-2xl overflow-hidden"
           >
-            <div className="absolute w-full mt-1 rounded-lg border border-white/15 bg-[#111] shadow-2xl overflow-hidden">
-              {/* Search */}
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
-                <Search className="h-4 w-4 text-white/30 shrink-0" />
-                <input
-                  autoFocus
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search by number or name…"
-                  className="w-full bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
-                />
-              </div>
+            {/* Search */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
+              <Search className="h-4 w-4 text-white/30 shrink-0" />
+              <input
+                autoFocus
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search by number or name…"
+                className="w-full bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
+              />
+            </div>
 
-              {/* Team list */}
-              <div className="max-h-64 overflow-y-auto">
-                {filtered.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-sm text-white/30">
-                    {available.length === 0 ? "All teams scouted!" : "No teams match your search."}
-                  </div>
-                ) : (
-                  filtered.map(team => (
-                    <button
-                      key={team.key}
-                      type="button"
-                      onClick={() => { onSelect(team); setOpen(false); setSearch(""); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
-                    >
-                      <span className="font-display font-bold text-lg text-primary w-14 shrink-0">
-                        {team.team_number}
-                      </span>
-                      <span className="text-sm text-white/80 truncate">{team.nickname}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-
-              {/* Already scouted count */}
-              {doneCount > 0 && (
-                <div className="px-4 py-2 border-t border-white/10 text-xs text-white/30 flex items-center gap-1.5">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  {doneCount} team{doneCount !== 1 ? "s" : ""} already scouted — hidden from list
+            {/* Team list */}
+            <div className="max-h-64 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <div className="px-4 py-6 text-center text-sm text-white/30">
+                  {available.length === 0 ? "All teams scouted!" : "No teams match your search."}
                 </div>
+              ) : (
+                filtered.map(team => (
+                  <button
+                    key={team.key}
+                    type="button"
+                    onClick={() => { onSelect(team); setOpen(false); setSearch(""); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                  >
+                    <span className="font-display font-bold text-lg text-primary w-14 shrink-0">
+                      {team.team_number}
+                    </span>
+                    <span className="text-sm text-white/80 truncate">{team.nickname}</span>
+                  </button>
+                ))
               )}
             </div>
+
+            {doneCount > 0 && (
+              <div className="px-4 py-2 border-t border-white/10 text-xs text-white/30 flex items-center gap-1.5">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                {doneCount} team{doneCount !== 1 ? "s" : ""} already scouted — hidden from list
+              </div>
+            )}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
