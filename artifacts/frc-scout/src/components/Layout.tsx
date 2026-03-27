@@ -7,7 +7,7 @@ export function Layout({ children, title, showBack = true }: { children: React.R
   const [location] = useLocation();
 
   return (
-    <div className="min-h-screen flex flex-col relative z-0">
+    <div className="min-h-screen flex flex-col relative z-0 overflow-x-hidden">
       <div
         className="fixed inset-0 z-[-1] opacity-20 pointer-events-none bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${import.meta.env.BASE_URL}images/hero-bg.png)` }}
