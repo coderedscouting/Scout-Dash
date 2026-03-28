@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCreateHpEntry, useEventSettings, CreateHpEntry } from "@/hooks/use-scout-api";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus, Save, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Minus, Save } from "lucide-react";
 import { getEventMatches, type TBAMatch } from "@/lib/tba";
 
 function getNextMatchNum(matches: TBAMatch[]): number {
@@ -72,15 +72,6 @@ export default function HpScout() {
     }
   }, [tbaMatches]);
 
-  const allQm = tbaMatches
-    .filter((m) => m.comp_level === "qm")
-    .sort((a, b) => a.match_number - b.match_number);
-  const matchStatus = (num: number) => {
-    const m = allQm.find((m) => m.match_number === num);
-    if (!m) return "unknown";
-    return m.actual_time ? "done" : "upcoming";
-  };
-
   const handleSubmit = async () => {
     if (!formData.scouter || !formData.alliance) {
       toast({ title: "Error", description: "Scouter name and Alliance are required.", variant: "destructive" });
@@ -95,8 +86,6 @@ export default function HpScout() {
     }
   };
 
-  const status = matchStatus(formData.matchNum);
-
   return (
     <Layout title="HUMAN PLAYER SCOUT">
       <div className="max-w-xl mx-auto mt-8">
@@ -106,79 +95,26 @@ export default function HpScout() {
           </CardHeader>
           <CardContent className="space-y-8">
 
-            {/* Scouter */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold uppercase text-muted-foreground">Scouter Name</label>
-              <Input
-                placeholder="Jane D."
-                value={formData.scouter}
-                onChange={(e) => setFormData({ ...formData, scouter: e.target.value })}
-              />
-            </div>
-
-            {/* Match selector */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold uppercase text-muted-foreground">Match Number</label>
-                {tbaLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                {!tbaLoading && status === "done" && (
-                  <span className="text-xs text-green-400 font-medium">✓ Completed</span>
-                )}
-                {!tbaLoading && status === "upcoming" && (
-                  <span className="text-xs text-yellow-400 font-medium">⏳ Upcoming</span>
-                )}
+            {/* Scouter + Match */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase text-muted-foreground">Scouter Name</label>
+                <Input
+                  placeholder="Jane D."
+                  value={formData.scouter}
+                  onChange={(e) => setFormData({ ...formData, scouter: e.target.value })}
+                />
               </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="border-white/10"
-                  onClick={() => setFormData((prev) => ({ ...prev, matchNum: Math.max(1, prev.matchNum - 1) }))}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase text-muted-foreground">Match Number</label>
                 <Input
                   type="number"
-                  className="text-center text-xl font-display font-bold"
                   value={formData.matchNum}
                   onChange={(e) =>
                     setFormData({ ...formData, matchNum: parseInt(e.target.value) || 1 })
                   }
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="border-white/10"
-                  onClick={() => setFormData((prev) => ({ ...prev, matchNum: prev.matchNum + 1 }))}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
               </div>
-
-              {/* Quick-pick upcoming matches */}
-              {allQm.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {allQm
-                    .filter((m) => !m.actual_time)
-                    .slice(0, 8)
-                    .map((m) => (
-                      <button
-                        key={m.match_number}
-                        type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, matchNum: m.match_number }))}
-                        className={`px-3 py-1 rounded text-sm font-display transition-all border ${
-                          formData.matchNum === m.match_number
-                            ? "bg-primary border-primary text-white"
-                            : "bg-black/40 border-white/10 text-white/60 hover:text-white hover:bg-white/5"
-                        }`}
-                      >
-                        Q{m.match_number}
-                      </button>
-                    ))}
-                </div>
-              )}
             </div>
 
             {/* Alliance */}
