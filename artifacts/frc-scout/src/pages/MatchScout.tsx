@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCreateMatchEntry, useEventSettings, CreateMatchEntry } from "@/hooks/use-scout-api";
+import { useOfflineQueue } from "@/context/OfflineQueueContext";
 import { Square, Save, ShieldAlert, Crosshair, MapPin, Zap, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getEventMatches, getTeamsForMatch, type TBAMatch, type MatchTeams } from "@/lib/tba";
@@ -151,25 +152,29 @@ export default function MatchScout() {
     }
   }, [formData.matchNum, tbaMatches]);
 
+  const { addToQueue } = useOfflineQueue();
+
   const handleSubmit = async () => {
     if (!formData.scouter || !formData.teamNum) {
       toast({ title: "Validation Error", description: "Scouter and Team Number are required.", variant: "destructive" });
       return;
     }
-    try {
-      await createMatch.mutateAsync(formData);
-      toast({ title: "Success!", description: `Match ${formData.matchNum} submitted for team ${formData.teamNum}.` });
-      const nextMatch = formData.matchNum + 1;
+    const nextMatch = formData.matchNum + 1;
+    const advance = () => {
       setFormData(prev => ({ ...emptyForm, scouter: prev.scouter, matchNum: nextMatch }));
       setCurrentPage(0);
       setIsShooting(false);
       setIsClimbing(false);
-      // Update teams for next match
-      if (tbaMatches.length > 0) {
-        setMatchTeams(getTeamsForMatch(tbaMatches, nextMatch));
-      }
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to submit match", variant: "destructive" });
+      if (tbaMatches.length > 0) setMatchTeams(getTeamsForMatch(tbaMatches, nextMatch));
+    };
+    try {
+      await createMatch.mutateAsync(formData);
+      toast({ title: "Success!", description: `Match ${formData.matchNum} submitted for team ${formData.teamNum}.` });
+      advance();
+    } catch {
+      addToQueue("match", "/api/match-entries", formData);
+      toast({ title: "Saved locally", description: "No connection — data saved on this device. Tap Send Data when back online." });
+      advance();
     }
   };
 

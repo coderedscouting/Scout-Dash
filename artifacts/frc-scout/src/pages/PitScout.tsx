@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Save, ChevronDown, Search, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCreatePitEntry, usePitEntries, useEventSettings, CreatePitEntry } from "@/hooks/use-scout-api";
+import { useOfflineQueue } from "@/context/OfflineQueueContext";
 import { getEventTeams, type TBATeam } from "@/lib/tba";
 
 const BigToggle = ({
@@ -271,6 +272,8 @@ export default function PitScout() {
     }));
   };
 
+  const { addToQueue } = useOfflineQueue();
+
   const handleSubmit = async () => {
     if (!formData.scouter || !formData.teamNum) {
       toast({ title: "Validation Error", description: "Scouter name and Team are required.", variant: "destructive" });
@@ -282,7 +285,10 @@ export default function PitScout() {
       setFormData(prev => ({ ...emptyForm, scouter: prev.scouter }));
       setSelectedTeam(null);
     } catch {
-      toast({ title: "Error", description: "Failed to submit pit entry.", variant: "destructive" });
+      addToQueue("pit", "/api/pit-entries", formData);
+      toast({ title: "Saved locally", description: "No connection — data saved on this device. Tap Send Data when back online." });
+      setFormData(prev => ({ ...emptyForm, scouter: prev.scouter }));
+      setSelectedTeam(null);
     }
   };
 

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCreateHpEntry, useEventSettings, CreateHpEntry } from "@/hooks/use-scout-api";
+import { useOfflineQueue } from "@/context/OfflineQueueContext";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Minus, Save } from "lucide-react";
 import { getEventMatches, type TBAMatch } from "@/lib/tba";
@@ -72,6 +73,8 @@ export default function HpScout() {
     }
   }, [tbaMatches]);
 
+  const { addToQueue } = useOfflineQueue();
+
   const handleSubmit = async () => {
     if (!formData.scouter || !formData.alliance) {
       toast({ title: "Error", description: "Scouter name and Alliance are required.", variant: "destructive" });
@@ -82,7 +85,9 @@ export default function HpScout() {
       toast({ title: "Success", description: `HP Entry for Match ${formData.matchNum} submitted.` });
       setFormData((prev) => ({ ...prev, scores: 0 }));
     } catch {
-      toast({ title: "Error", description: "Failed to submit HP data.", variant: "destructive" });
+      addToQueue("hp", "/api/hp-entries", formData);
+      toast({ title: "Saved locally", description: "No connection — data saved on this device. Tap Send Data when back online." });
+      setFormData((prev) => ({ ...prev, scores: 0 }));
     }
   };
 
