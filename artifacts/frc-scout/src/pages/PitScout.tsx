@@ -38,6 +38,43 @@ const BigToggle = ({
   </div>
 );
 
+// Multi-select toggle — selected values stored as comma-separated string
+const MultiToggle = ({
+  label, options, selected, onChange,
+}: {
+  label: string; options: string[]; selected: string; onChange: (val: string) => void;
+}) => {
+  const active = selected ? selected.split(", ").filter(Boolean) : [];
+  const toggle = (opt: string) => {
+    const next = active.includes(opt) ? active.filter(v => v !== opt) : [...active, opt];
+    onChange(next.join(", "));
+  };
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+        <span className="ml-2 text-xs font-normal text-white/40 normal-case">select all that apply</span>
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => toggle(opt)}
+            className={`flex-1 min-w-[80px] py-3 px-4 rounded-md font-display text-lg transition-all duration-200 border ${
+              active.includes(opt)
+                ? "bg-primary border-primary text-white shadow-[0_0_15px_-3px_rgba(230,0,0,0.5)]"
+                : "bg-black/40 border-white/10 text-white/70 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Searchable team dropdown — renders panel via portal so it floats above all cards
 function TeamDropdown({
   teams,
@@ -371,9 +408,9 @@ export default function PitScout() {
             <AnimatePresence>
               {formData.canClimb === "Yes" && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                  <BigToggle
-                    label="Where?"
-                    options={["Center", "Side", "Both"]}
+                  <MultiToggle
+                    label="Which levels?"
+                    options={["L1", "L2", "L3"]}
                     selected={formData.climbLocation}
                     onChange={set("climbLocation")}
                   />
