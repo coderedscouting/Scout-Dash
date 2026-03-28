@@ -22,6 +22,8 @@ export interface TBAMatch {
   comp_level: string;
   match_number: number;
   set_number: number;
+  actual_time: number | null;
+  predicted_time: number | null;
   alliances: {
     red: { team_keys: string[]; score: number };
     blue: { team_keys: string[]; score: number };

@@ -77,7 +77,7 @@ async function ensureTab(
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [headers] },
     });
-    // Bold + red header row
+    // Bold header row + freeze
     const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID! });
     const sheetId = sheetMeta.data.sheets?.find(
       (s) => s.properties?.title === tabName,
@@ -92,11 +92,10 @@ async function ensureTab(
                 range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
                 cell: {
                   userEnteredFormat: {
-                    backgroundColor: { red: 0.76, green: 0, blue: 0 },
-                    textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
+                    textFormat: { bold: true },
                   },
                 },
-                fields: "userEnteredFormat(backgroundColor,textFormat)",
+                fields: "userEnteredFormat(textFormat)",
               },
             },
             {
