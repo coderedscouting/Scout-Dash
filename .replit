@@ -28,3 +28,8 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+GOOGLE_SHEET_ID = "1uQNPeBTPYx42KX-rdKOj0O7EH20VE0RW1YZSgwyhxdk"
