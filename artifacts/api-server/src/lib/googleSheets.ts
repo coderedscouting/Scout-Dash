@@ -52,46 +52,108 @@ async function getUncachableGoogleSheetClient() {
   return google.sheets({ version: "v4", auth: oauth2Client });
 }
 
-async function ensureHeaders(
+// Ensure a tab exists, creating it and writing headers if needed
+async function ensureTab(
   sheets: Awaited<ReturnType<typeof getUncachableGoogleSheetClient>>,
-  sheetName: string,
+  tabName: string,
   headers: string[],
 ) {
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID!,
-    range: `'${sheetName}'!1:1`,
-  });
-  if (!existing.data.values || existing.data.values.length === 0) {
-    await sheets.spreadsheets.values.append({
+  // Get existing sheet tabs
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID! });
+  const exists = meta.data.sheets?.some((s) => s.properties?.title === tabName);
+
+  if (!exists) {
+    // Create the tab
+    await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SHEET_ID!,
-      range: `'${sheetName}'!A1`,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title: tabName } } }],
+      },
+    });
+    // Write headers
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID!,
+      range: `${tabName}!A1`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [headers] },
     });
+    // Bold + red header row
+    const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID! });
+    const sheetId = sheetMeta.data.sheets?.find(
+      (s) => s.properties?.title === tabName,
+    )?.properties?.sheetId;
+    if (sheetId !== undefined) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID!,
+        requestBody: {
+          requests: [
+            {
+              repeatCell: {
+                range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+                cell: {
+                  userEnteredFormat: {
+                    backgroundColor: { red: 0.76, green: 0, blue: 0 },
+                    textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
+                  },
+                },
+                fields: "userEnteredFormat(backgroundColor,textFormat)",
+              },
+            },
+            {
+              updateSheetProperties: {
+                properties: { sheetId, gridProperties: { frozenRowCount: 1 } },
+                fields: "gridProperties.frozenRowCount",
+              },
+            },
+          ],
+        },
+      });
+    }
   }
 }
 
-async function appendRow(sheetName: string, row: (string | number | boolean | null | undefined)[]) {
+async function appendRow(
+  tabName: string,
+  headers: string[],
+  row: (string | number | boolean | null | undefined)[],
+) {
   if (!SHEET_ID) {
     logger.warn("GOOGLE_SHEET_ID not set — skipping Sheets write");
     return;
   }
   try {
     const sheets = await getUncachableGoogleSheetClient();
+    await ensureTab(sheets, tabName, headers);
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `'${sheetName}'!A:A`,
+      range: `${tabName}!A:A`,
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: [row] },
     });
   } catch (err) {
-    logger.warn({ err }, `Failed to write to Google Sheets tab: ${sheetName}`);
+    logger.warn({ err }, `Failed to write to Google Sheets tab: ${tabName}`);
   }
 }
 
+const MATCH_HEADERS = [
+  "Event", "Scouter", "Team #", "Match #", "Start Pos",
+  "Auto Cycle Starts", "Auto Cycle Stops",
+  "Auto Climb Start", "Auto Climb Location", "Auto Climb Success", "Auto Climb Success Time",
+  "Tele Cycle Starts", "Tele Cycle Stops",
+  "Tele Climb Start", "Tele Climb Location", "Tele Climb Level", "Tele Climb Success", "Tele Climb Success Time",
+  "Comments", "Defense Played", "Defense Rating",
+];
+
+const HP_HEADERS = ["Event", "Scouter", "Match #", "Alliance", "Shots Made"];
+
+const PIT_HEADERS = [
+  "Event", "Scouter", "Team #", "Team Name", "Drive Train",
+  "Avg. Capacity", "Auto Fuel Count", "Can Climb", "Climb Levels", "Comments",
+];
+
 export async function appendMatchRow(eventKey: string, body: any) {
-  await appendRow("Match Data", [
+  await appendRow("Match Data", MATCH_HEADERS, [
     eventKey,
     body.scouter, body.teamNum, body.matchNum, body.startPos,
     (body.autoCycles?.starts ?? []).join(", "),
@@ -114,7 +176,7 @@ export async function appendMatchRow(eventKey: string, body: any) {
 }
 
 export async function appendHpRow(eventKey: string, body: any) {
-  await appendRow("Human Player Data", [
+  await appendRow("Human Player Data", HP_HEADERS, [
     eventKey,
     body.scouter,
     body.matchNum,
@@ -124,7 +186,7 @@ export async function appendHpRow(eventKey: string, body: any) {
 }
 
 export async function appendPitRow(eventKey: string, body: any) {
-  await appendRow("Pit Scouting", [
+  await appendRow("Pit Scouting", PIT_HEADERS, [
     eventKey,
     body.scouter, body.teamNum, body.teamName ?? "",
     body.drivetrain ?? "", body.avgCapacity ?? "",
