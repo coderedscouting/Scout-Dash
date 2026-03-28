@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useCreateMatchEntry, useEventSettings, CreateMatchEntry } from "@/hooks/use-scout-api";
 import { Square, Save, ShieldAlert, Crosshair, MapPin, Zap, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { sendMatchToSheets } from "@/lib/googleSheets";
 import { getEventMatches, getTeamsForMatch, type TBAMatch, type MatchTeams } from "@/lib/tba";
 
 const BigToggle = ({
@@ -158,10 +157,7 @@ export default function MatchScout() {
       return;
     }
     try {
-      await Promise.all([
-        createMatch.mutateAsync(formData),
-        sendMatchToSheets(formData),
-      ]);
+      await createMatch.mutateAsync(formData);
       toast({ title: "Success!", description: `Match ${formData.matchNum} submitted for team ${formData.teamNum}.` });
       const nextMatch = formData.matchNum + 1;
       setFormData(prev => ({ ...emptyForm, scouter: prev.scouter, matchNum: nextMatch }));

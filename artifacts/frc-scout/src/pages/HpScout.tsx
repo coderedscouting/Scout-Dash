@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useCreateHpEntry, CreateHpEntry } from "@/hooks/use-scout-api";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Minus, Save } from "lucide-react";
-import { sendHpToSheets } from "@/lib/googleSheets";
 
 export default function HpScout() {
   const { toast } = useToast();
@@ -27,10 +26,7 @@ export default function HpScout() {
 
     try {
       // Save locally and send to Google Sheets simultaneously
-      await Promise.all([
-        createHp.mutateAsync(formData),
-        sendHpToSheets(formData),
-      ]);
+      await createHp.mutateAsync(formData);
       toast({ title: "Success", description: `HP Entry for Match ${formData.matchNum} saved and sent to Google Sheets.` });
       
       // Reset but keep scouter and increment match

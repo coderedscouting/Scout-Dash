@@ -7,6 +7,12 @@
  */
 import * as zod from "zod";
 
+// Coerces empty strings / null / undefined to undefined, otherwise parses as number
+const optNum = zod.preprocess(
+  (v) => (v === "" || v == null ? undefined : Number(v)),
+  zod.number().optional(),
+);
+
 /**
  * @summary Health check
  */
@@ -81,11 +87,11 @@ export const CreateMatchEntryBody = zod.object({
     .optional(),
   autoClimb: zod
     .object({
-      startTime: zod.number().optional(),
+      startTime: optNum,
       location: zod.string().optional(),
       level: zod.string().optional(),
       success: zod.string().optional(),
-      successTime: zod.number().optional(),
+      successTime: optNum,
     })
     .optional(),
   teleCycles: zod
@@ -96,11 +102,11 @@ export const CreateMatchEntryBody = zod.object({
     .optional(),
   teleClimb: zod
     .object({
-      startTime: zod.number().optional(),
+      startTime: optNum,
       location: zod.string().optional(),
       level: zod.string().optional(),
       success: zod.string().optional(),
-      successTime: zod.number().optional(),
+      successTime: optNum,
     })
     .optional(),
   comments: zod.string().optional(),

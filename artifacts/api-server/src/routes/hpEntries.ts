@@ -1,9 +1,17 @@
 import { Router, type IRouter } from "express";
-import { db, hpEntriesTable } from "@workspace/db";
+import { db, hpEntriesTable, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { CreateHpEntryBody, DeleteHpEntryParams } from "@workspace/api-zod";
+import { appendHpRow } from "../lib/googleSheets";
 
 const router: IRouter = Router();
+
+async function getEventKey(): Promise<string> {
+  const rows = await db.select().from(settingsTable);
+  const map: Record<string, string> = {};
+  for (const r of rows) map[r.key] = r.value;
+  return map["event_key"] ?? "";
+}
 
 router.get("/hp-entries", async (req, res) => {
   try {
@@ -27,6 +35,11 @@ router.post("/hp-entries", async (req, res) => {
         scores: body.scores,
       })
       .returning();
+
+    getEventKey()
+      .then((eventKey) => appendHpRow(eventKey, body))
+      .catch(() => {});
+
     res.status(201).json(entry);
   } catch (err) {
     req.log.error({ err }, "Failed to create hp entry");

@@ -1,9 +1,17 @@
 import { Router, type IRouter } from "express";
-import { db, pitEntriesTable } from "@workspace/db";
+import { db, pitEntriesTable, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { CreatePitEntryBody, DeletePitEntryParams } from "@workspace/api-zod";
+import { appendPitRow } from "../lib/googleSheets";
 
 const router: IRouter = Router();
+
+async function getEventKey(): Promise<string> {
+  const rows = await db.select().from(settingsTable);
+  const map: Record<string, string> = {};
+  for (const r of rows) map[r.key] = r.value;
+  return map["event_key"] ?? "";
+}
 
 router.get("/pit-entries", async (req, res) => {
   try {
@@ -32,6 +40,11 @@ router.post("/pit-entries", async (req, res) => {
         comments: body.comments ?? "",
       })
       .returning();
+
+    getEventKey()
+      .then((eventKey) => appendPitRow(eventKey, body))
+      .catch(() => {});
+
     res.status(201).json(entry);
   } catch (err) {
     req.log.error({ err }, "Failed to create pit entry");

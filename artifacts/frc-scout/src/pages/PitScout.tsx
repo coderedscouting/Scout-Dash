@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Save, ChevronDown, Search, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCreatePitEntry, usePitEntries, useEventSettings, CreatePitEntry } from "@/hooks/use-scout-api";
-import { sendPitToSheets } from "@/lib/googleSheets";
 import { getEventTeams, type TBATeam } from "@/lib/tba";
 
 const BigToggle = ({
@@ -278,10 +277,7 @@ export default function PitScout() {
       return;
     }
     try {
-      await Promise.all([
-        createPit.mutateAsync(formData),
-        sendPitToSheets(formData),
-      ]);
+      await createPit.mutateAsync(formData);
       toast({ title: "Success!", description: `Pit data for team ${formData.teamNum} submitted.` });
       setFormData(prev => ({ ...emptyForm, scouter: prev.scouter }));
       setSelectedTeam(null);
