@@ -115,10 +115,25 @@ function TeamDropdown({
 
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+
+    const updatePosition = () => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setPanelStyle({
+          top: rect.bottom + 6,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
   }, [open]);
 
   const pool = showScouted ? teams : teams.filter(t => !scoutedNums.has(String(t.team_number)));
@@ -190,7 +205,10 @@ function TeamDropdown({
               />
             </div>
 
-            <div className="max-h-64 overflow-y-auto">
+            <div
+              className="max-h-64 overflow-y-auto overscroll-contain"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
               {filtered.length === 0 ? (
                 <div className="px-4 py-6 text-center text-sm text-white/30">
                   {pool.length === 0 ? "All teams scouted!" : "No teams match your search."}
