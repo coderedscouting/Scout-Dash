@@ -1,9 +1,14 @@
 // Google Sheets integration via Replit connector (googleapis)
 // WARNING: Never cache the client — tokens expire. Always call getUncachableGoogleSheetClient() fresh.
+//
+// Local dev fallback: if REPLIT_CONNECTORS_HOSTNAME is absent (i.e. not running on Replit),
+// submissions are sent to APPS_SCRIPT_URL (a published Google Apps Script web app) instead.
 import { google } from "googleapis";
 import { logger } from "./logger";
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
+const ON_REPLIT = !!process.env.REPLIT_CONNECTORS_HOSTNAME;
 
 let connectionSettings: any;
 
@@ -52,32 +57,53 @@ async function getUncachableGoogleSheetClient() {
   return google.sheets({ version: "v4", auth: oauth2Client });
 }
 
-// Ensure a tab exists, creating it and writing headers if needed
+// ── Local dev: Apps Script fallback ────────────────────────────────────────
+// Posts the data as JSON to a published Google Apps Script web app.
+// Format: { eventKey, type: "matchData"|"hpData"|"pitData", data: { ...fields } }
+// The Apps Script receives this in doPost(e) and appends a row to the sheet.
+async function sendViaAppsScript(
+  type: "matchData" | "hpData" | "pitData",
+  eventKey: string,
+  data: Record<string, unknown>,
+) {
+  if (!APPS_SCRIPT_URL) {
+    logger.warn("APPS_SCRIPT_URL not set — skipping local Sheets write");
+    return;
+  }
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" }, // GAS requires text/plain for no-cors
+      body: JSON.stringify({ eventKey, [type]: [data] }),
+    });
+    logger.info({ type }, "Sent to Apps Script");
+  } catch (err) {
+    logger.warn({ err }, "Failed to send to Apps Script");
+  }
+}
+
+// ── Replit: googleapis path ─────────────────────────────────────────────────
 async function ensureTab(
   sheets: Awaited<ReturnType<typeof getUncachableGoogleSheetClient>>,
   tabName: string,
   headers: string[],
 ) {
-  // Get existing sheet tabs
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID! });
   const exists = meta.data.sheets?.some((s) => s.properties?.title === tabName);
 
   if (!exists) {
-    // Create the tab
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SHEET_ID!,
       requestBody: {
         requests: [{ addSheet: { properties: { title: tabName } } }],
       },
     });
-    // Write headers
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID!,
       range: `${tabName}!A1`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [headers] },
     });
-    // Bold header row + freeze
     const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID! });
     const sheetId = sheetMeta.data.sheets?.find(
       (s) => s.properties?.title === tabName,
@@ -90,11 +116,7 @@ async function ensureTab(
             {
               repeatCell: {
                 range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
-                cell: {
-                  userEnteredFormat: {
-                    textFormat: { bold: true },
-                  },
-                },
+                cell: { userEnteredFormat: { textFormat: { bold: true } } },
                 fields: "userEnteredFormat(textFormat)",
               },
             },
@@ -135,6 +157,7 @@ async function appendRow(
   }
 }
 
+// ── Public API ──────────────────────────────────────────────────────────────
 const MATCH_HEADERS = [
   "Event", "Scouter", "Team #", "Match #", "Start Pos",
   "Auto Cycle Starts", "Auto Cycle Stops",
@@ -143,15 +166,35 @@ const MATCH_HEADERS = [
   "Tele Climb Start", "Tele Climb Location", "Tele Climb Level", "Tele Climb Success", "Tele Climb Success Time",
   "Comments", "Defense Played", "Defense Rating",
 ];
-
 const HP_HEADERS = ["Event", "Scouter", "Match #", "Alliance", "Shots Made"];
-
 const PIT_HEADERS = [
   "Event", "Scouter", "Team #", "Team Name", "Drive Train",
   "Avg. Capacity (pieces)", "Auto Pieces Scored", "Can Climb", "Climb Levels", "Comments",
 ];
 
 export async function appendMatchRow(eventKey: string, body: any) {
+  if (!ON_REPLIT) {
+    return sendViaAppsScript("matchData", eventKey, {
+      scouter: body.scouter, teamNum: body.teamNum, matchNum: body.matchNum,
+      startPos: body.startPos,
+      autoCycleStarts: (body.autoCycles?.starts ?? []).join(", "),
+      autoCycleStops: (body.autoCycles?.stops ?? []).join(", "),
+      autoClimbStart: body.autoClimb?.startTime ?? "",
+      autoClimbLocation: body.autoClimb?.location ?? "",
+      autoClimbSuccess: body.autoClimb?.success ?? "",
+      autoClimbSuccessTime: body.autoClimb?.successTime ?? "",
+      teleCycleStarts: (body.teleCycles?.starts ?? []).join(", "),
+      teleCycleStops: (body.teleCycles?.stops ?? []).join(", "),
+      teleClimbStart: body.teleClimb?.startTime ?? "",
+      teleClimbLocation: body.teleClimb?.location ?? "",
+      teleClimbLevel: body.teleClimb?.level ?? "",
+      teleClimbSuccess: body.teleClimb?.success ?? "",
+      teleClimbSuccessTime: body.teleClimb?.successTime ?? "",
+      comments: body.comments ?? "",
+      defensePlayed: body.defensePlayed ?? "",
+      defenseRating: body.defenseRating ?? "",
+    });
+  }
   await appendRow("Match Data", MATCH_HEADERS, [
     eventKey,
     body.scouter, body.teamNum, body.matchNum, body.startPos,
@@ -175,16 +218,26 @@ export async function appendMatchRow(eventKey: string, body: any) {
 }
 
 export async function appendHpRow(eventKey: string, body: any) {
+  if (!ON_REPLIT) {
+    return sendViaAppsScript("hpData", eventKey, {
+      scouter: body.scouter, matchNum: body.matchNum,
+      alliance: body.alliance, scores: body.scores,
+    });
+  }
   await appendRow("Human Player Data", HP_HEADERS, [
-    eventKey,
-    body.scouter,
-    body.matchNum,
-    body.alliance,
-    body.scores,
+    eventKey, body.scouter, body.matchNum, body.alliance, body.scores,
   ]);
 }
 
 export async function appendPitRow(eventKey: string, body: any) {
+  if (!ON_REPLIT) {
+    return sendViaAppsScript("pitData", eventKey, {
+      scouter: body.scouter, teamNum: body.teamNum, teamName: body.teamName ?? "",
+      drivetrain: body.drivetrain ?? "", avgCapacity: body.avgCapacity ?? "",
+      autoPiecesScored: body.autoPiecesScored ?? "", canClimb: body.canClimb ?? "",
+      climbLevels: body.climbLevels ?? "", comments: body.comments ?? "",
+    });
+  }
   await appendRow("Pit Scouting", PIT_HEADERS, [
     eventKey,
     body.scouter, body.teamNum, body.teamName ?? "",
