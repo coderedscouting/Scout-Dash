@@ -1,12 +1,14 @@
 import { Router, type IRouter } from "express";
-import { db, hpEntriesTable, settingsTable } from "@workspace/db";
+import { NO_DB_MODE, db, hpEntriesTable, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { CreateHpEntryBody, DeleteHpEntryParams } from "@workspace/api-zod";
 import { appendHpRow } from "../lib/googleSheets";
+import { hpStore, insertHp, deleteHp } from "../lib/memStore";
 
 const router: IRouter = Router();
 
 async function getEventKey(): Promise<string> {
+  if (NO_DB_MODE) return "";
   const rows = await db.select().from(settingsTable);
   const map: Record<string, string> = {};
   for (const r of rows) map[r.key] = r.value;
@@ -14,6 +16,7 @@ async function getEventKey(): Promise<string> {
 }
 
 router.get("/hp-entries", async (req, res) => {
+  if (NO_DB_MODE) { res.json(hpStore); return; }
   try {
     const entries = await db.select().from(hpEntriesTable).orderBy(hpEntriesTable.createdAt);
     res.json(entries);
@@ -26,20 +29,23 @@ router.get("/hp-entries", async (req, res) => {
 router.post("/hp-entries", async (req, res) => {
   try {
     const body = CreateHpEntryBody.parse(req.body);
+    if (NO_DB_MODE) {
+      const entry = insertHp({
+        scouter: body.scouter, matchNum: body.matchNum,
+        alliance: body.alliance, scores: body.scores,
+      });
+      getEventKey().then((eventKey) => appendHpRow(eventKey, body)).catch(() => {});
+      res.status(201).json(entry);
+      return;
+    }
     const [entry] = await db
       .insert(hpEntriesTable)
       .values({
-        scouter: body.scouter,
-        matchNum: body.matchNum,
-        alliance: body.alliance,
-        scores: body.scores,
+        scouter: body.scouter, matchNum: body.matchNum,
+        alliance: body.alliance, scores: body.scores,
       })
       .returning();
-
-    getEventKey()
-      .then((eventKey) => appendHpRow(eventKey, body))
-      .catch(() => {});
-
+    getEventKey().then((eventKey) => appendHpRow(eventKey, body)).catch(() => {});
     res.status(201).json(entry);
   } catch (err) {
     req.log.error({ err }, "Failed to create hp entry");
@@ -50,6 +56,7 @@ router.post("/hp-entries", async (req, res) => {
 router.delete("/hp-entries/:id", async (req, res) => {
   try {
     const { id } = DeleteHpEntryParams.parse({ id: Number(req.params.id) });
+    if (NO_DB_MODE) { deleteHp(id); res.status(204).send(); return; }
     await db.delete(hpEntriesTable).where(eq(hpEntriesTable.id, id));
     res.status(204).send();
   } catch (err) {

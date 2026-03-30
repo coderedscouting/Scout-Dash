@@ -1,11 +1,13 @@
 import { Router, type IRouter } from "express";
-import { db, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { NO_DB_MODE, db, settingsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-// GET /settings — returns the active event key and name
 router.get("/settings", async (req, res) => {
+  if (NO_DB_MODE) {
+    res.json({ eventKey: "local", eventName: "Local Dev (no DB)" });
+    return;
+  }
   try {
     const rows = await db.select().from(settingsTable);
     const map: Record<string, string> = {};
