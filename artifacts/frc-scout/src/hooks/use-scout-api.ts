@@ -61,12 +61,12 @@ export interface PitEntry extends CreatePitEntry {
   createdAt: string;
 }
 
-// Settings hook
 export interface EventSettings {
   eventKey: string;
   eventName: string;
 }
 
+// Settings hooks
 export function useEventSettings() {
   return useQuery<EventSettings>({
     queryKey: ["/api/settings"],
@@ -76,6 +76,24 @@ export function useEventSettings() {
       return res.json();
     },
     staleTime: 30_000,
+  });
+}
+
+export function useUpdateSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Partial<EventSettings>) => {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update settings");
+      return res.json() as Promise<EventSettings>;
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["/api/settings"], updated);
+    },
   });
 }
 
@@ -102,6 +120,17 @@ export function useCreateMatchEntry() {
       });
       if (!res.ok) throw new Error("Failed to create match entry");
       return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/match-entries"] }),
+  });
+}
+
+export function useDeleteMatchEntry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/match-entries/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete match entry");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/match-entries"] }),
   });
@@ -135,6 +164,17 @@ export function useCreateHpEntry() {
   });
 }
 
+export function useDeleteHpEntry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/hp-entries/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete HP entry");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/hp-entries"] }),
+  });
+}
+
 // Pit hooks
 export function usePitEntries() {
   return useQuery<PitEntry[]>({
@@ -158,6 +198,17 @@ export function useCreatePitEntry() {
       });
       if (!res.ok) throw new Error("Failed to create pit entry");
       return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/pit-entries"] }),
+  });
+}
+
+export function useDeletePitEntry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/pit-entries/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete pit entry");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/pit-entries"] }),
   });
