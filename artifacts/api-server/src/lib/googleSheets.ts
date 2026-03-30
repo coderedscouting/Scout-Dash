@@ -10,6 +10,10 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
 const ON_REPLIT = !!process.env.REPLIT_CONNECTORS_HOSTNAME;
 
+// If APPS_SCRIPT_URL is set it takes priority everywhere (local or Replit).
+// Falls back to googleapis connector when on Replit without APPS_SCRIPT_URL.
+const USE_APPS_SCRIPT = !!APPS_SCRIPT_URL;
+
 let connectionSettings: any;
 
 async function getAccessToken() {
@@ -73,7 +77,7 @@ async function sendViaAppsScript(
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain" }, // GAS requires text/plain for no-cors
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ eventKey, [type]: [data] }),
     });
     logger.info({ type }, "Sent to Apps Script");
@@ -173,7 +177,7 @@ const PIT_HEADERS = [
 ];
 
 export async function appendMatchRow(eventKey: string, body: any) {
-  if (!ON_REPLIT) {
+  if (USE_APPS_SCRIPT) {
     return sendViaAppsScript("matchData", eventKey, {
       scouter: body.scouter, teamNum: body.teamNum, matchNum: body.matchNum,
       startPos: body.startPos,
@@ -218,7 +222,7 @@ export async function appendMatchRow(eventKey: string, body: any) {
 }
 
 export async function appendHpRow(eventKey: string, body: any) {
-  if (!ON_REPLIT) {
+  if (USE_APPS_SCRIPT) {
     return sendViaAppsScript("hpData", eventKey, {
       scouter: body.scouter, matchNum: body.matchNum,
       alliance: body.alliance, scores: body.scores,
@@ -230,7 +234,7 @@ export async function appendHpRow(eventKey: string, body: any) {
 }
 
 export async function appendPitRow(eventKey: string, body: any) {
-  if (!ON_REPLIT) {
+  if (USE_APPS_SCRIPT) {
     return sendViaAppsScript("pitData", eventKey, {
       scouter: body.scouter, teamNum: body.teamNum, teamName: body.teamName ?? "",
       drivetrain: body.drivetrain ?? "", avgCapacity: body.avgCapacity ?? "",
