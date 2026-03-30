@@ -296,154 +296,156 @@ export default function PitScout() {
 
   return (
     <Layout showBack={true}>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <motion.h1
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-display font-bold uppercase tracking-wider text-shadow-red"
-        >
-          Pit Scout
-        </motion.h1>
+      <div className="min-h-screen flex flex-col relative z-0 overflow-x-hidden overflow-y-auto">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-display font-bold uppercase tracking-wider text-shadow-red"
+          >
+            Pit Scout
+          </motion.h1>
 
-        {/* Scouter */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Scouter</h3>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold uppercase text-muted-foreground">Scouter Name</label>
-              <Input placeholder="John D." value={formData.scouter} onChange={e => set("scouter")(e.target.value)} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Team selector */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Team</h3>
-
-            {!eventConfigured ? (
-              <div className="flex items-center gap-2 text-yellow-400 text-sm py-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                No event configured — contact your team lead to set the active event.
+          {/* Scouter */}
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-display text-xl border-b border-white/10 pb-2">Scouter</h3>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase text-muted-foreground">Scouter Name</label>
+                <Input placeholder="John D." value={formData.scouter} onChange={e => set("scouter")(e.target.value)} />
               </div>
-            ) : teamsLoading ? (
-              <div className="flex items-center gap-2 text-white/40 text-sm py-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading teams…
-              </div>
-            ) : teamsError ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-yellow-400 text-sm">
+            </CardContent>
+          </Card>
+
+          {/* Team selector */}
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-display text-xl border-b border-white/10 pb-2">Team</h3>
+
+              {!eventConfigured ? (
+                <div className="flex items-center gap-2 text-yellow-400 text-sm py-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
-                  Couldn't load team list — enter manually below.
+                  No event configured — contact your team lead to set the active event.
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold uppercase text-muted-foreground">Team Number</label>
-                    <Input placeholder="2771" type="number" value={formData.teamNum} onChange={e => set("teamNum")(e.target.value)} />
+              ) : teamsLoading ? (
+                <div className="flex items-center gap-2 text-white/40 text-sm py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading teams…
+                </div>
+              ) : teamsError ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-yellow-400 text-sm">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    Couldn't load team list — enter manually below.
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold uppercase text-muted-foreground">Team Name</label>
-                    <Input placeholder="Code Red Robotics" value={formData.teamName} onChange={e => set("teamName")(e.target.value)} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold uppercase text-muted-foreground">Team Number</label>
+                      <Input placeholder="2771" type="number" value={formData.teamNum} onChange={e => set("teamNum")(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold uppercase text-muted-foreground">Team Name</label>
+                      <Input placeholder="Code Red Robotics" value={formData.teamName} onChange={e => set("teamName")(e.target.value)} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <TeamDropdown
-                teams={teams}
-                scoutedNums={scoutedNums}
-                selected={selectedTeam}
-                onSelect={handleTeamSelect}
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Robot */}
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Robot</h3>
-            <BigToggle
-              label="Drive Train"
-              options={["Swerve", "Tank", "Mecanum", "Other"]}
-              selected={formData.drivetrain}
-              onChange={set("drivetrain")}
-            />
-            <div className="space-y-2">
-              <label className="text-sm font-semibold uppercase text-muted-foreground">Avg. Capacity (game pieces)</label>
-              <Input
-                placeholder="e.g. 3"
-                type="number"
-                value={formData.avgCapacity}
-                onChange={e => set("avgCapacity")(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Auto */}
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Auto</h3>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold uppercase text-muted-foreground">How many fuel can they score in Auto?</label>
-              <Input
-                placeholder="e.g. 5"
-                type="number"
-                value={formData.autoFuelCount}
-                onChange={e => set("autoFuelCount")(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Climb */}
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Climb</h3>
-            <BigToggle
-              label="Can they climb?"
-              options={["Yes", "No"]}
-              selected={formData.canClimb}
-              onChange={val => setFormData(prev => ({ ...prev, canClimb: val, climbLocation: "" }))}
-            />
-            <AnimatePresence>
-              {formData.canClimb === "Yes" && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                  <MultiToggle
-                    label="Which levels?"
-                    options={["L1", "L2", "L3"]}
-                    selected={formData.climbLocation}
-                    onChange={set("climbLocation")}
-                  />
-                </motion.div>
+              ) : (
+                <TeamDropdown
+                  teams={teams}
+                  scoutedNums={scoutedNums}
+                  selected={selectedTeam}
+                  onSelect={handleTeamSelect}
+                />
               )}
-            </AnimatePresence>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Notes */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <h3 className="font-display text-xl border-b border-white/10 pb-2">Notes</h3>
-            <Textarea
-              placeholder="Additional observations..."
-              value={formData.comments}
-              onChange={e => set("comments")(e.target.value)}
-              className="min-h-[100px]"
-            />
-          </CardContent>
-        </Card>
+          {/* Robot */}
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              <h3 className="font-display text-xl border-b border-white/10 pb-2">Robot</h3>
+              <BigToggle
+                label="Drive Train"
+                options={["Swerve", "Tank", "Mecanum", "Other"]}
+                selected={formData.drivetrain}
+                onChange={set("drivetrain")}
+              />
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase text-muted-foreground">Avg. Capacity (game pieces)</label>
+                <Input
+                  placeholder="e.g. 3"
+                  type="number"
+                  value={formData.avgCapacity}
+                  onChange={e => set("avgCapacity")(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        <Button
-          size="lg"
-          onClick={handleSubmit}
-          disabled={createPit.isPending}
-          className="w-full bg-primary hover:bg-primary/90 text-xl py-6 shadow-[0_0_20px_rgba(230,0,0,0.6)]"
-        >
-          <Save className="mr-2 h-5 w-5" />
-          {createPit.isPending ? "Submitting..." : "Submit Pit Data"}
-        </Button>
+          {/* Auto */}
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              <h3 className="font-display text-xl border-b border-white/10 pb-2">Auto</h3>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase text-muted-foreground">How many fuel can they score in Auto?</label>
+                <Input
+                  placeholder="e.g. 5"
+                  type="number"
+                  value={formData.autoFuelCount}
+                  onChange={e => set("autoFuelCount")(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Climb */}
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              <h3 className="font-display text-xl border-b border-white/10 pb-2">Climb</h3>
+              <BigToggle
+                label="Can they climb?"
+                options={["Yes", "No"]}
+                selected={formData.canClimb}
+                onChange={val => setFormData(prev => ({ ...prev, canClimb: val, climbLocation: "" }))}
+              />
+              <AnimatePresence>
+                {formData.canClimb === "Yes" && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                    <MultiToggle
+                      label="Which levels?"
+                      options={["L1", "L2", "L3"]}
+                      selected={formData.climbLocation}
+                      onChange={set("climbLocation")}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+
+          {/* Notes */}
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-display text-xl border-b border-white/10 pb-2">Notes</h3>
+              <Textarea
+                placeholder="Additional observations..."
+                value={formData.comments}
+                onChange={e => set("comments")(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </CardContent>
+          </Card>
+
+          <Button
+            size="lg"
+            onClick={handleSubmit}
+            disabled={createPit.isPending}
+            className="w-full bg-primary hover:bg-primary/90 text-xl py-6 shadow-[0_0_20px_rgba(230,0,0,0.6)]"
+          >
+            <Save className="mr-2 h-5 w-5" />
+            {createPit.isPending ? "Submitting..." : "Submit Pit Data"}
+          </Button>
+        </div>
       </div>
     </Layout>
   );
