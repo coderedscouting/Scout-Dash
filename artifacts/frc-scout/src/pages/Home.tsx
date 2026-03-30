@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Activity, ClipboardList, UserRound, Database } from "lucide-react";
+import { Activity, ClipboardList, UserRound } from "lucide-react";
 
 export default function Home() {
   const links = [
@@ -54,19 +54,6 @@ export default function Home() {
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-8"
-        >
-          <Link href="/data">
-            <button className="flex items-center gap-2 text-muted-foreground hover:text-white text-sm font-medium px-4 py-2 rounded-lg border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all">
-              <Database className="w-4 h-4" />
-              Admin / Data
-            </button>
-          </Link>
-        </motion.div>
       </div>
     </Layout>
   );
