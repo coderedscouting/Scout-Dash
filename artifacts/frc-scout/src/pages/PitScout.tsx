@@ -89,11 +89,11 @@ function TeamDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [showScouted, setShowScouted] = useState(false);
   const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Position panel under the trigger button
   const openDropdown = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -102,7 +102,6 @@ function TeamDropdown({
     setOpen(true);
   };
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -114,7 +113,6 @@ function TeamDropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  // Close on scroll/resize so panel doesn't drift
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
@@ -123,8 +121,8 @@ function TeamDropdown({
     return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
   }, [open]);
 
-  const available = teams.filter(t => !scoutedNums.has(String(t.team_number)));
-  const filtered = available.filter(t => {
+  const pool = showScouted ? teams : teams.filter(t => !scoutedNums.has(String(t.team_number)));
+  const filtered = pool.filter(t => {
     const q = search.toLowerCase();
     return String(t.team_number).includes(q) || (t.nickname ?? "").toLowerCase().includes(q);
   });
@@ -134,16 +132,26 @@ function TeamDropdown({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-semibold uppercase text-muted-foreground">
-        Select Team
-        {totalCount > 0 && (
-          <span className="ml-2 text-xs font-normal text-white/40 normal-case">
-            {doneCount}/{totalCount} scouted
-          </span>
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-semibold uppercase text-muted-foreground">
+          Select Team
+          {totalCount > 0 && (
+            <span className="ml-2 text-xs font-normal text-white/40 normal-case">
+              {doneCount}/{totalCount} scouted
+            </span>
+          )}
+        </label>
+        {doneCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowScouted(v => !v)}
+            className="text-xs text-white/40 hover:text-white/70 underline underline-offset-2 transition-colors"
+          >
+            {showScouted ? "Hide scouted" : "Show scouted"}
+          </button>
         )}
-      </label>
+      </div>
 
-      {/* Trigger */}
       <button
         ref={triggerRef}
         type="button"
@@ -160,7 +168,6 @@ function TeamDropdown({
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Portal-rendered panel — sits above everything */}
       {open && createPortal(
         <AnimatePresence>
           <motion.div
@@ -172,7 +179,6 @@ function TeamDropdown({
             style={{ position: "fixed", top: panelStyle.top, left: panelStyle.left, width: panelStyle.width, zIndex: 9999 }}
             className="rounded-lg border border-white/15 bg-[#111] shadow-2xl overflow-hidden"
           >
-            {/* Search */}
             <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
               <Search className="h-4 w-4 text-white/30 shrink-0" />
               <input
@@ -184,33 +190,40 @@ function TeamDropdown({
               />
             </div>
 
-            {/* Team list */}
             <div className="max-h-64 overflow-y-auto">
               {filtered.length === 0 ? (
                 <div className="px-4 py-6 text-center text-sm text-white/30">
-                  {available.length === 0 ? "All teams scouted!" : "No teams match your search."}
+                  {pool.length === 0 ? "All teams scouted!" : "No teams match your search."}
                 </div>
               ) : (
-                filtered.map(team => (
-                  <button
-                    key={team.key}
-                    type="button"
-                    onClick={() => { onSelect(team); setOpen(false); setSearch(""); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
-                  >
-                    <span className="font-display font-bold text-lg text-primary w-14 shrink-0">
-                      {team.team_number}
-                    </span>
-                    <span className="text-sm text-white/80 truncate">{team.nickname}</span>
-                  </button>
-                ))
+                filtered.map(team => {
+                  const isScouted = scoutedNums.has(String(team.team_number));
+                  return (
+                    <button
+                      key={team.key}
+                      type="button"
+                      onClick={() => { onSelect(team); setOpen(false); setSearch(""); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                    >
+                      <span className="font-display font-bold text-lg text-primary w-14 shrink-0">
+                        {team.team_number}
+                      </span>
+                      <span className="text-sm text-white/80 truncate flex-1">{team.nickname}</span>
+                      {isScouted && (
+                        <span className="text-xs text-green-400 shrink-0 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" /> re-scout
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
 
-            {doneCount > 0 && (
+            {doneCount > 0 && !showScouted && (
               <div className="px-4 py-2 border-t border-white/10 text-xs text-white/30 flex items-center gap-1.5">
                 <CheckCircle className="h-3 w-3 text-green-500" />
-                {doneCount} team{doneCount !== 1 ? "s" : ""} already scouted — hidden from list
+                {doneCount} team{doneCount !== 1 ? "s" : ""} already scouted — tap "Show scouted" to re-scout
               </div>
             )}
           </motion.div>
@@ -227,9 +240,9 @@ const emptyForm: CreatePitEntry = {
   teamName: "",
   drivetrain: "",
   avgCapacity: "",
-  autoFuelCount: "",
+  autoPiecesScored: "",
   canClimb: "",
-  climbLocation: "",
+  climbLevels: "",
   comments: "",
 };
 
@@ -371,7 +384,7 @@ export default function PitScout() {
                 onChange={set("drivetrain")}
               />
               <div className="space-y-2">
-                <label className="text-sm font-semibold uppercase text-muted-foreground">Avg. Capacity (game pieces)</label>
+                <label className="text-sm font-semibold uppercase text-muted-foreground">Avg. Capacity <span className="normal-case font-normal text-white/40">(coral + algae per match)</span></label>
                 <Input
                   placeholder="e.g. 3"
                   type="number"
@@ -387,12 +400,12 @@ export default function PitScout() {
             <CardContent className="p-6 space-y-6">
               <h3 className="font-display text-xl border-b border-white/10 pb-2">Auto</h3>
               <div className="space-y-2">
-                <label className="text-sm font-semibold uppercase text-muted-foreground">How many fuel can they score in Auto?</label>
+                <label className="text-sm font-semibold uppercase text-muted-foreground">Game pieces scored in Auto</label>
                 <Input
-                  placeholder="e.g. 5"
+                  placeholder="e.g. 3"
                   type="number"
-                  value={formData.autoFuelCount}
-                  onChange={e => set("autoFuelCount")(e.target.value)}
+                  value={formData.autoPiecesScored}
+                  onChange={e => set("autoPiecesScored")(e.target.value)}
                 />
               </div>
             </CardContent>
@@ -406,7 +419,7 @@ export default function PitScout() {
                 label="Can they climb?"
                 options={["Yes", "No"]}
                 selected={formData.canClimb}
-                onChange={val => setFormData(prev => ({ ...prev, canClimb: val, climbLocation: "" }))}
+                onChange={val => setFormData(prev => ({ ...prev, canClimb: val, climbLevels: "" }))}
               />
               <AnimatePresence>
                 {formData.canClimb === "Yes" && (
@@ -414,8 +427,8 @@ export default function PitScout() {
                     <MultiToggle
                       label="Which levels?"
                       options={["L1", "L2", "L3"]}
-                      selected={formData.climbLocation}
-                      onChange={set("climbLocation")}
+                      selected={formData.climbLevels}
+                      onChange={set("climbLevels")}
                     />
                   </motion.div>
                 )}

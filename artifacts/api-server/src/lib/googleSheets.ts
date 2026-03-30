@@ -148,7 +148,7 @@ const HP_HEADERS = ["Event", "Scouter", "Match #", "Alliance", "Shots Made"];
 
 const PIT_HEADERS = [
   "Event", "Scouter", "Team #", "Team Name", "Drive Train",
-  "Avg. Capacity", "Auto Fuel Count", "Can Climb", "Climb Levels", "Comments",
+  "Avg. Capacity (pieces)", "Auto Pieces Scored", "Can Climb", "Climb Levels", "Comments",
 ];
 
 export async function appendMatchRow(eventKey: string, body: any) {
@@ -189,7 +189,7 @@ export async function appendPitRow(eventKey: string, body: any) {
     eventKey,
     body.scouter, body.teamNum, body.teamName ?? "",
     body.drivetrain ?? "", body.avgCapacity ?? "",
-    body.autoFuelCount ?? "", body.canClimb ?? "",
-    body.climbLocation ?? "", body.comments ?? "",
+    body.autoPiecesScored ?? "", body.canClimb ?? "",
+    body.climbLevels ?? "", body.comments ?? "",
   ]);
 }

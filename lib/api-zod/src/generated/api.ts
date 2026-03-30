@@ -165,9 +165,9 @@ export const CreatePitEntryBody = zod.object({
   teamName: zod.string().optional(),
   drivetrain: zod.string().optional(),
   avgCapacity: zod.string().optional(),
-  autoFuelCount: zod.string().optional(),
+  autoPiecesScored: zod.string().optional(),
   canClimb: zod.string().optional(),
-  climbLocation: zod.string().optional(),
+  climbLevels: zod.string().optional(),
   comments: zod.string().optional(),
 });
 

@@ -82,9 +82,9 @@ export async function sendPitToSheets(data: CreatePitEntry): Promise<void> {
       teamName: data.teamName,
       drivetrain: data.drivetrain,
       avgCapacity: data.avgCapacity,
-      autoFuelCount: data.autoFuelCount,
+      autoPiecesScored: data.autoPiecesScored,
       canClimb: data.canClimb,
-      climbLocation: data.climbLocation,
+      climbLevels: data.climbLevels,
       comments: data.comments,
     }],
   });

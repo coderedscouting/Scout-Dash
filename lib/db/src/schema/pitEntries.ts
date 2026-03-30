@@ -9,9 +9,9 @@ export const pitEntriesTable = pgTable("pit_entries", {
   teamName: text("team_name").default(""),
   drivetrain: text("drivetrain").default(""),
   avgCapacity: text("avg_capacity").default(""),
-  autoFuelCount: text("auto_fuel_count").default(""),
+  autoPiecesScored: text("auto_pieces_scored").default(""),
   canClimb: text("can_climb").default(""),
-  climbLocation: text("climb_location").default(""),
+  climbLevels: text("climb_levels").default(""),
   comments: text("comments").default(""),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -34,9 +34,9 @@ router.post("/pit-entries", async (req, res) => {
         teamName: body.teamName ?? "",
         drivetrain: body.drivetrain ?? "",
         avgCapacity: body.avgCapacity ?? "",
-        autoFuelCount: body.autoFuelCount ?? "",
+        autoPiecesScored: body.autoPiecesScored ?? "",
         canClimb: body.canClimb ?? "",
-        climbLocation: body.climbLocation ?? "",
+        climbLevels: body.climbLevels ?? "",
         comments: body.comments ?? "",
       })
       .returning();

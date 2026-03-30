@@ -50,9 +50,9 @@ export interface CreatePitEntry {
   teamName: string;
   drivetrain: string;
   avgCapacity: string;
-  autoFuelCount: string;
+  autoPiecesScored: string;
   canClimb: string;
-  climbLocation: string;
+  climbLevels: string;
   comments: string;
 }
 
